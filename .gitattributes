@@ -1,0 +1,12 @@
+# Linguist configuration for W12C Sheets
+
+# Vendored code (exclude from language statistics)
+backend-go/.gomodcache/** linguist-vendored
+shlyux/node_modules/** linguist-vendored
+
+# Documentation
+*.md linguist-documentation
+
+# Generated files
+*.min.js linguist-generated
+*.bundle.js linguist-generated
