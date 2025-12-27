@@ -60,3 +60,5 @@ erl_crash.dump
 tmp/
 temp/
 *.tmp
+*.log
+.DS_Store
