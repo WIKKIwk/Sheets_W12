@@ -1,0 +1,17 @@
+{
+    "name": "w12c-sheets",
+    "version": "1.0.0",
+    "description": "AI-powered spreadsheet platform",
+    "license": "Apache-2.0",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/WIKKIwk/Sheets_W12.git"
+    },
+    "keywords": [
+        "spreadsheet",
+        "ai",
+        "google-sheets",
+        "excel",
+        "collaboration"
+    ]
+}
