@@ -62,3 +62,13 @@ temp/
 *.tmp
 *.log
 .DS_Store
+node_modules/
+dist/
+build/
+*.log
+.DS_Store
+.env.local
+.vscode/
+.idea/
+coverage/
+*.swp
