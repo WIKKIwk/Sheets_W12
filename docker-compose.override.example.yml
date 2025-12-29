@@ -1,0 +1,35 @@
+# Docker Compose Override Example
+# Copy to docker-compose.override.yml for local customization
+# This file is gitignored
+
+version: '3.8'
+
+services:
+  backend-go:
+    # Enable debugging
+    environment:
+      - LOG_LEVEL=debug
+      - GIN_MODE=debug
+    # Mount local code for hot reload
+    volumes:
+      - ./backend-go:/app
+    # Expose additional ports
+    ports:
+      - "2345:2345"  # Debugger port
+
+  frontend:
+    # Development mode
+    command: npm run dev
+    volumes:
+      - ./shlyux:/app
+      - /app/node_modules
+    
+  converter_db:
+    # Expose database port
+    ports:
+      - "5432:5432"
+    
+  redis:
+    # Expose Redis port
+    ports:
+      - "6379:6379"
