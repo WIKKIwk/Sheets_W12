@@ -5,68 +5,89 @@
 @tailwind utilities;
 
 :root {
-  /* Default Light Theme */
-  --primary: #000000;
-  --primary-dark: #1a1a1a;
-  --secondary: #2d2d2d;
-  --accent: #404040;
-  --brand: #2563eb;
-  --bg-gradient: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
-  --bg-light: #fafafa;
+  /* Apple-ish Light */
+  --primary: #1d1d1f;
+  --primary-dark: #111114;
+  --secondary: rgba(60, 60, 67, 0.72);
+  --accent: rgba(60, 60, 67, 0.3);
+  --brand: #0a84ff;
+  --bg-gradient: linear-gradient(180deg, #fbfbfd 0%, #f5f5f7 100%);
+  --bg-light: #f2f2f7;
   --card-bg: #ffffff;
-  --border-color: #e0e0e0;
-  --text-primary: #000000;
-  --text-secondary: #666666;
-  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 2px 8px 0 rgba(0, 0, 0, 0.12);
-  --shadow-lg: 0 4px 16px 0 rgba(0, 0, 0, 0.15);
-  --sheet-header-hover-bg: rgba(59, 130, 246, 0.12);
-  --sheet-header-active-bg: rgba(59, 130, 246, 0.22);
-  --sheet-grid-line: rgba(0, 0, 0, 0.08);
+  --border-color: rgba(60, 60, 67, 0.12);
+  --text-primary: #1d1d1f;
+  --text-secondary: rgba(60, 60, 67, 0.65);
+  --shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 24px 70px rgba(0, 0, 0, 0.18);
+  --focus-ring: rgba(10, 132, 255, 0.28);
+
+  --radius-sm: 10px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  --chrome-bg: rgba(255, 255, 255, 0.76);
+  --chrome-border: rgba(60, 60, 67, 0.12);
+  --chrome-control-bg: rgba(255, 255, 255, 0.9);
+  --chrome-control-hover: rgba(0, 0, 0, 0.04);
+  --chrome-control-active: rgba(0, 0, 0, 0.07);
+  --menu-bg: rgba(255, 255, 255, 0.92);
+
+  --sheet-header-hover-bg: rgba(10, 132, 255, 0.10);
+  --sheet-header-active-bg: rgba(10, 132, 255, 0.16);
+  --sheet-grid-line: rgba(60, 60, 67, 0.10);
   --sheet-cell-bg: var(--card-bg);
-  --sheet-cell-bg-alt: #fbfbfb;
-  --sheet-selection-border: rgba(37, 99, 235, 0.85);
-  --sheet-selection-fill: rgba(37, 99, 235, 0.14);
-  --sheet-selection-fill-weak: rgba(37, 99, 235, 0.06);
-  --sheet-active-cell-outline: rgba(37, 99, 235, 0.95);
-  --sheet-danger-border: rgba(239, 68, 68, 0.9);
-  --sheet-danger-fill: rgba(239, 68, 68, 0.18);
-  --focus-ring: rgba(37, 99, 235, 0.35);
+  --sheet-cell-bg-alt: #fbfbfd;
+  --sheet-selection-border: rgba(10, 132, 255, 0.92);
+  --sheet-selection-fill: rgba(10, 132, 255, 0.12);
+  --sheet-selection-fill-weak: rgba(10, 132, 255, 0.06);
+  --sheet-active-cell-outline: rgba(10, 132, 255, 0.96);
+  --sheet-danger-border: rgba(255, 59, 48, 0.92);
+  --sheet-danger-fill: rgba(255, 59, 48, 0.14);
   --chat-user-bubble: #1fd655;
   --chat-user-text: #ffffff;
 
   /* Font Family Variable */
-  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, "Inter", "Segoe UI", sans-serif;
 }
 
 /* Dark Theme */
 [data-theme="dark"] {
-  --primary: #667eea;
-  --primary-dark: #5568d3;
-  --secondary: #3a3a3a;
-  --accent: #525252;
-  --brand: #667eea;
-  --bg-gradient: linear-gradient(135deg, #1c1c1c 0%, #0a0a0a 100%);
-  --bg-light: #2a2a2a;
-  --card-bg: #1c1c1c;
-  --border-color: #3a3a3a;
-  --text-primary: #f5f5f5;
-  --text-secondary: #a8a8a8;
-  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 2px 8px 0 rgba(0, 0, 0, 0.6);
-  --shadow-lg: 0 4px 16px 0 rgba(0, 0, 0, 0.7);
-  --sheet-header-hover-bg: rgba(102, 126, 234, 0.18);
-  --sheet-header-active-bg: rgba(102, 126, 234, 0.32);
-  --sheet-grid-line: rgba(255, 255, 255, 0.08);
+  --primary: rgba(235, 235, 245, 0.92);
+  --primary-dark: rgba(235, 235, 245, 0.82);
+  --secondary: rgba(235, 235, 245, 0.60);
+  --accent: rgba(235, 235, 245, 0.22);
+  --brand: #0a84ff;
+  --bg-gradient: linear-gradient(180deg, #141417 0%, #0b0b0c 100%);
+  --bg-light: rgba(255, 255, 255, 0.06);
+  --card-bg: #1c1c1e;
+  --border-color: rgba(84, 84, 88, 0.55);
+  --text-primary: rgba(235, 235, 245, 0.92);
+  --text-secondary: rgba(235, 235, 245, 0.60);
+  --shadow-sm: 0 1px 0 rgba(255, 255, 255, 0.06), 0 6px 20px rgba(0, 0, 0, 0.55);
+  --shadow-md: 0 18px 50px rgba(0, 0, 0, 0.65);
+  --shadow-lg: 0 30px 90px rgba(0, 0, 0, 0.72);
+  --focus-ring: rgba(10, 132, 255, 0.45);
+
+  --chrome-bg: rgba(28, 28, 30, 0.78);
+  --chrome-border: rgba(84, 84, 88, 0.55);
+  --chrome-control-bg: rgba(44, 44, 46, 0.92);
+  --chrome-control-hover: rgba(255, 255, 255, 0.08);
+  --chrome-control-active: rgba(255, 255, 255, 0.12);
+  --menu-bg: rgba(28, 28, 30, 0.92);
+
+  --sheet-header-hover-bg: rgba(10, 132, 255, 0.18);
+  --sheet-header-active-bg: rgba(10, 132, 255, 0.30);
+  --sheet-grid-line: rgba(84, 84, 88, 0.48);
   --sheet-cell-bg: var(--card-bg);
-  --sheet-cell-bg-alt: #1f1f1f;
-  --sheet-selection-border: rgba(102, 126, 234, 0.85);
-  --sheet-selection-fill: rgba(102, 126, 234, 0.2);
-  --sheet-selection-fill-weak: rgba(102, 126, 234, 0.1);
-  --sheet-active-cell-outline: rgba(102, 126, 234, 0.95);
-  --sheet-danger-border: rgba(248, 113, 113, 0.9);
-  --sheet-danger-fill: rgba(248, 113, 113, 0.22);
-  --focus-ring: rgba(102, 126, 234, 0.45);
+  --sheet-cell-bg-alt: #1f1f22;
+  --sheet-selection-border: rgba(10, 132, 255, 0.88);
+  --sheet-selection-fill: rgba(10, 132, 255, 0.22);
+  --sheet-selection-fill-weak: rgba(10, 132, 255, 0.12);
+  --sheet-active-cell-outline: rgba(10, 132, 255, 0.94);
+  --sheet-danger-border: rgba(255, 69, 58, 0.92);
+  --sheet-danger-fill: rgba(255, 69, 58, 0.22);
 }
 
 /* Tailwind Dark Mode Overrides */
@@ -81,9 +102,12 @@
   background-color: var(--bg-light) !important;
 }
 
-[data-theme="dark"] .bg-blue-50,
+[data-theme="dark"] .bg-blue-50 {
+  background-color: var(--sheet-selection-fill-weak) !important;
+}
+
 [data-theme="dark"] .bg-blue-100 {
-  background-color: rgba(102, 126, 234, 0.15) !important;
+  background-color: var(--sheet-selection-fill) !important;
 }
 
 [data-theme="dark"] .bg-green-50 {
@@ -136,6 +160,9 @@
 
 body {
   font-family: var(--font-family);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: geometricPrecision;
   overflow: hidden;
   background: var(--bg-gradient);
   color: var(--text-primary);
@@ -205,7 +232,7 @@ button:hover:not(:disabled) {
 }
 
 button:active:not(:disabled) {
-  transform: scale(0.99);
+  transform: scale(0.98);
 }
 
 button:disabled {
@@ -223,36 +250,16 @@ button:focus-visible {
 }
 
 .btn-lift:hover:not(:disabled) {
-  transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
 
 .btn-lift:active:not(:disabled) {
-  transform: translateY(0);
   box-shadow: var(--shadow-sm);
 }
 
 /* Icon animations within buttons */
 button svg {
-  transition: transform 0.15s ease;
-}
-
-button:hover:not(:disabled) svg {
-  transform: scale(1.06);
-}
-
-button:active:not(:disabled) svg {
-  transform: scale(0.98);
-}
-
-/* Special animations for specific icons */
-button:hover .lucide-sparkles {
-  animation: pulse 1s ease-in-out infinite;
-}
-
-button:hover .lucide-refresh-cw,
-button:hover .lucide-rotate-cw {
-  transform: rotate(180deg) scale(1.1);
+  transition: transform var(--ui-motion-fast) var(--ui-motion-ease);
 }
 
 /* Dropdown animations */
@@ -262,11 +269,7 @@ button:hover .lucide-rotate-cw {
 
 /* Link and anchor animations */
 a {
-  transition: all 0.2s ease;
-}
-
-a:hover {
-  transform: translateX(2px);
+  transition: color 0.15s ease, opacity 0.15s ease;
 }
 
 /* Input focus animations */
@@ -451,15 +454,15 @@ textarea,
 
 .auth-overlay {
   background:
-    radial-gradient(900px circle at 15% 20%, rgba(37, 99, 235, 0.12), transparent 55%),
-    radial-gradient(900px circle at 85% 80%, rgba(37, 99, 235, 0.10), transparent 60%),
+    radial-gradient(900px circle at 15% 20%, rgba(10, 132, 255, 0.12), transparent 55%),
+    radial-gradient(900px circle at 85% 80%, rgba(10, 132, 255, 0.10), transparent 60%),
     rgba(0, 0, 0, 0.45);
 }
 
 [data-theme="dark"] .auth-overlay {
   background:
-    radial-gradient(900px circle at 15% 20%, rgba(102, 126, 234, 0.18), transparent 55%),
-    radial-gradient(900px circle at 85% 80%, rgba(102, 126, 234, 0.14), transparent 60%),
+    radial-gradient(900px circle at 15% 20%, rgba(10, 132, 255, 0.20), transparent 55%),
+    radial-gradient(900px circle at 85% 80%, rgba(10, 132, 255, 0.16), transparent 60%),
     rgba(0, 0, 0, 0.66);
 }
 
