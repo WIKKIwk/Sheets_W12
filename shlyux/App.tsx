@@ -6,6 +6,7 @@ import AuthWall from './components/AuthWall';
 import ContextMenu from './components/ContextMenu';
 import Header from './components/Header';
 import Profile from './components/Profile';
+import VersionHistoryModal from './components/VersionHistoryModal';
 import DeleteConfirmModal from './components/DeleteConfirmModal';
 import OverwriteConfirmModal from './components/OverwriteConfirmModal';
 import Toast, { ToastState, ToastTone } from './components/Toast';
@@ -15,6 +16,7 @@ import ShareModal from './components/ShareModal';
 import StatusBar from './components/StatusBar';
 import CommandPalette, { CommandPaletteItem } from './components/CommandPalette';
 import { API_BASE, AuthUser, fetchMe, getFile, getFileRealtimeToken, listFiles, login, register, saveFile, deleteFile, SheetFileMeta, convertExcel } from './utils/api';
+import { SheetSnapshot, addSnapshot, deleteSnapshot, readSnapshots, safeCloneSheetState } from './utils/snapshots';
 import { SheetState, ClipboardData, ContextMenuState, GridData, CellStyle, CellData } from './types';
 import { getCellId, getColumnLabel, recomputeSheet, NUM_COLS, NUM_ROWS, cellLabelToCoords } from './utils/spreadsheetUtils';
 import { RealtimeClient } from './utils/realtime';
@@ -180,14 +182,16 @@ const App: React.FC = () => {
   const [realtimeClient, setRealtimeClient] = useState<RealtimeClient | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
   const [overwriteConfirm, setOverwriteConfirm] = useState<{ show: boolean; action: (() => void) | null }>({ show: false, action: null });
-  const [toast, setToast] = useState<ToastState | null>(null);
-  const remoteQueue = useRef<Record<string, string>>({});
-  const [showProfile, setShowProfile] = useState(false);
-  const [shareOpen, setShareOpen] = useState(false);
-  const [uiDensity, setUiDensity] = useState<'comfortable' | 'compact'>(() => {
-    if (typeof window === 'undefined') return 'comfortable';
-    return localStorage.getItem('app-density') === 'compact' ? 'compact' : 'comfortable';
-  });
+	  const [toast, setToast] = useState<ToastState | null>(null);
+	  const remoteQueue = useRef<Record<string, string>>({});
+	  const [showProfile, setShowProfile] = useState(false);
+	  const [versionHistoryOpen, setVersionHistoryOpen] = useState(false);
+	  const [snapshots, setSnapshots] = useState<SheetSnapshot[]>([]);
+	  const [shareOpen, setShareOpen] = useState(false);
+	  const [uiDensity, setUiDensity] = useState<'comfortable' | 'compact'>(() => {
+	    if (typeof window === 'undefined') return 'comfortable';
+	    return localStorage.getItem('app-density') === 'compact' ? 'compact' : 'comfortable';
+	  });
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const saveSeqRef = useRef(0);
@@ -214,9 +218,13 @@ const App: React.FC = () => {
     document.documentElement.style.setProperty('--font-family', font);
   }, []);
 
-  useEffect(() => {
-    document.documentElement.setAttribute('data-density', uiDensity);
-  }, [uiDensity]);
+	  useEffect(() => {
+	    document.documentElement.setAttribute('data-density', uiDensity);
+	  }, [uiDensity]);
+
+	  useEffect(() => {
+	    setSnapshots(readSnapshots(currentFileId));
+	  }, [currentFileId]);
 
   // Auto save state
   const [autoSaveEnabled, setAutoSaveEnabled] = useState<boolean>(() => {
@@ -670,11 +678,11 @@ const App: React.FC = () => {
   }, [sheet.activeCell, sheet.data, editingCell]);
 
   // Save state to history for undo/redo
-  const saveState = useCallback((newSheet: SheetState) => {
-    setHistory(prev => {
-      const currentIndex = historyIndexRef.current;
-      const newHistory = prev.slice(0, currentIndex + 1);
-      newHistory.push(newSheet);
+	  const saveState = useCallback((newSheet: SheetState) => {
+	    setHistory(prev => {
+	      const currentIndex = historyIndexRef.current;
+	      const newHistory = prev.slice(0, currentIndex + 1);
+	      newHistory.push(newSheet);
       // Keep only last 50 states
       if (newHistory.length > 50) {
         newHistory.shift();
@@ -692,12 +700,44 @@ const App: React.FC = () => {
       console.error('Failed to save to localStorage:', e);
     }
 
-    scheduleAutoSave(newSheet);
-  }, [scheduleAutoSave]);
+	    scheduleAutoSave(newSheet);
+	  }, [scheduleAutoSave]);
 
-  // Undo function
-  const undo = useCallback(() => {
-    if (!ensureWritable('undo')) return;
+	  const handleCreateSnapshot = useCallback((label: string) => {
+	    const id = typeof crypto?.randomUUID === 'function'
+	      ? crypto.randomUUID()
+	      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+	    const snapshot: SheetSnapshot = {
+	      id,
+	      label,
+	      createdAt: Date.now(),
+	      state: safeCloneSheetState(sheet),
+	    };
+	    const next = addSnapshot(currentFileId, snapshot);
+	    setSnapshots(next);
+	    notify('success', 'Snapshot yaratildi');
+	  }, [sheet, currentFileId, notify]);
+
+	  const handleDeleteSnapshot = useCallback((snapshotId: string) => {
+	    const next = deleteSnapshot(currentFileId, snapshotId);
+	    setSnapshots(next);
+	    notify('success', 'Snapshot o‘chirildi');
+	  }, [currentFileId, notify]);
+
+	  const handleRestoreSnapshot = useCallback((snapshotId: string) => {
+	    if (!ensureWritable('snapshot restore')) return;
+	    const snap = snapshots.find((s) => s.id === snapshotId);
+	    if (!snap) return;
+	    const restored = safeCloneSheetState(snap.state);
+	    restored.data = recomputeSheet(restored.data || {});
+	    saveState(restored);
+	    setVersionHistoryOpen(false);
+	    notify('success', 'Snapshot tiklandi');
+	  }, [ensureWritable, snapshots, saveState, notify]);
+
+	  // Undo function
+	  const undo = useCallback(() => {
+	    if (!ensureWritable('undo')) return;
     if (historyIndexRef.current > 0) {
       const newIndex = historyIndexRef.current - 1;
       setHistoryIndex(newIndex);
@@ -743,16 +783,18 @@ const App: React.FC = () => {
     }
   }, [authForm.email, authForm.name, authForm.password, authMode]);
 
-  const handleLogout = useCallback(() => {
-    setToken(null);
-    setUser(null);
-    setShareOpen(false);
-    setCurrentFileId(null);
-    setFiles([]);
-    setCurrentAccessRole('owner');
-    setSaveStatus('idle');
-    setLastSavedAt(null);
-    setRealtimeStatus('disconnected');
+	  const handleLogout = useCallback(() => {
+	    setToken(null);
+	    setUser(null);
+	    setShareOpen(false);
+	    setVersionHistoryOpen(false);
+	    setCurrentFileId(null);
+	    setFiles([]);
+	    setSnapshots([]);
+	    setCurrentAccessRole('owner');
+	    setSaveStatus('idle');
+	    setLastSavedAt(null);
+	    setRealtimeStatus('disconnected');
     historyRef.current = [];
     historyIndexRef.current = -1;
     setHistory([]);
@@ -2811,19 +2853,33 @@ const App: React.FC = () => {
         onClose={() => setCommandOpen(false)}
       />
 
-      <Profile
-        isOpen={showProfile}
-        onClose={() => setShowProfile(false)}
-        onSaved={(prefs) => setUiDensity(prefs.density)}
-        apiBase={API_BASE}
-        authToken={token}
-        currentFileId={currentFileId}
-        currentAccessRole={currentAccessRole}
-      />
+	      <Profile
+	        isOpen={showProfile}
+	        onClose={() => setShowProfile(false)}
+	        onSaved={(prefs) => setUiDensity(prefs.density)}
+	        apiBase={API_BASE}
+	        authToken={token}
+	        currentFileId={currentFileId}
+	        currentAccessRole={currentAccessRole}
+	      />
 
-      {token && currentFileId !== null && (
-        <ShareModal
-          isOpen={shareOpen}
+	      <VersionHistoryModal
+	        isOpen={versionHistoryOpen}
+	        snapshots={snapshots}
+	        currentSheet={sheet}
+	        onClose={() => setVersionHistoryOpen(false)}
+	        onCreateSnapshot={handleCreateSnapshot}
+	        onRestoreSnapshot={handleRestoreSnapshot}
+	        onDeleteSnapshot={handleDeleteSnapshot}
+	        onJumpToCell={(row, col) => {
+	          setVersionHistoryOpen(false);
+	          goToCell(row, col);
+	        }}
+	      />
+
+	      {token && currentFileId !== null && (
+	        <ShareModal
+	          isOpen={shareOpen}
           fileId={currentFileId}
           fileName={fileName}
           token={token}
@@ -2845,20 +2901,21 @@ const App: React.FC = () => {
 
       {user && (
         <>
-          <Toolbar
-            activeStyle={getActiveCellStyle()}
-            onStyleChange={handleStyleChange}
-            isAiOpen={isAiOpen}
-            onToggleAi={() => setIsAiOpen(!isAiOpen)}
-            onOpenFindReplace={() => {
-              setFindMode('find');
-              setFindOpen(true);
-            }}
-            onUndo={undo}
-            onRedo={redo}
-            canUndo={currentAccessRole !== 'viewer' && historyIndex > 0}
-            canRedo={currentAccessRole !== 'viewer' && historyIndex < history.length - 1}
-            onPrint={handlePrint}
+	          <Toolbar
+	            activeStyle={getActiveCellStyle()}
+	            onStyleChange={handleStyleChange}
+	            isAiOpen={isAiOpen}
+	            onToggleAi={() => setIsAiOpen(!isAiOpen)}
+	            onOpenFindReplace={() => {
+	              setFindMode('find');
+	              setFindOpen(true);
+	            }}
+	            onOpenVersionHistory={() => setVersionHistoryOpen(true)}
+	            onUndo={undo}
+	            onRedo={redo}
+	            canUndo={currentAccessRole !== 'viewer' && historyIndex > 0}
+	            canRedo={currentAccessRole !== 'viewer' && historyIndex < history.length - 1}
+	            onPrint={handlePrint}
             onFormatPainter={handleFormatPainter}
             formatPainterActive={formatPainterActive}
             onMergeCells={handleMergeCells}

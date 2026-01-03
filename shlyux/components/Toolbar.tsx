@@ -3,7 +3,7 @@ import {
   Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight,
   Type, PaintBucket, Sparkles, Search, X, Undo2, Redo2, Eraser,
   AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd,
-  TextWrap, Printer, Paintbrush, Merge, Square, Plus, Minus, Save, ChevronDown, MoreHorizontal
+  TextWrap, Printer, Paintbrush, Merge, Square, Plus, Minus, Save, ChevronDown, MoreHorizontal, History
 } from 'lucide-react';
 import { CellStyle } from '../types';
 import { usePresence } from '../utils/usePresence';
@@ -28,6 +28,7 @@ interface ToolbarProps {
   isMerged?: boolean;
   autoSaveEnabled?: boolean;
   onToggleAutoSave?: () => void;
+  onOpenVersionHistory?: () => void;
   density?: 'comfortable' | 'compact';
 }
 
@@ -49,6 +50,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
   isMerged,
   autoSaveEnabled,
   onToggleAutoSave,
+  onOpenVersionHistory,
   density
 }) => {
   const [showFontDropdown, setShowFontDropdown] = useState(false);
@@ -570,6 +572,20 @@ const Toolbar: React.FC<ToolbarProps> = ({
       </div>
 
       <div className="flex-1"></div>
+
+      {onOpenVersionHistory && (
+        <Tooltip label="Version history">
+          <button
+            type="button"
+            onClick={onOpenVersionHistory}
+            className="icon-btn"
+            style={iconBtnStyle}
+            aria-label="Version history"
+          >
+            <History size={16} />
+          </button>
+        </Tooltip>
+      )}
 
       {/* Auto Save Toggle */}
       {onToggleAutoSave && (
