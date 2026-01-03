@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FileText, Save, FolderOpen, FilePlus, User, LogOut, Download, Terminal, Code2, Key, Copy, Check, Trash2, Edit3, Settings, LayoutTemplate, Share2 } from 'lucide-react';
 import { generateApiKey } from '../utils/api';
 import { usePresence } from '../utils/usePresence';
+import Tooltip from './Tooltip';
 
 interface HeaderProps {
     fileName: string;
@@ -208,71 +209,85 @@ const Header: React.FC<HeaderProps> = ({
                 {/* Actions */}
                 {user && (
                     <div className="header-actions">
-                        <button onClick={onNewFile} className="action-btn" title="New File">
-                            <FilePlus size={14} />
-                            <span>New</span>
-                        </button>
+                        <Tooltip label="New">
+                            <button onClick={onNewFile} className="action-btn" type="button">
+                                <FilePlus size={14} />
+                                <span>New</span>
+                            </button>
+                        </Tooltip>
 
                         {onOpenTemplates && (
-                            <button onClick={onOpenTemplates} className="action-btn" title="Templates (Ctrl+Shift+N)">
-                                <LayoutTemplate size={14} />
-                                <span>Templates</span>
-                            </button>
+                            <Tooltip label="Templates" shortcut="Ctrl+Shift+N">
+                                <button onClick={onOpenTemplates} className="action-btn" type="button">
+                                    <LayoutTemplate size={14} />
+                                    <span>Templates</span>
+                                </button>
+                            </Tooltip>
                         )}
 
                         {onShareFile && currentFileId && isOwner && (
-                            <button onClick={onShareFile} className="action-btn" title="Share">
-                                <Share2 size={14} />
-                                <span>Share</span>
-                            </button>
+                            <Tooltip label="Share">
+                                <button onClick={onShareFile} className="action-btn" type="button">
+                                    <Share2 size={14} />
+                                    <span>Share</span>
+                                </button>
+                            </Tooltip>
                         )}
 
-                        <button
-                            onClick={onSaveFile}
-                            disabled={isViewer}
-                            className={`action-btn primary btn-lift ${isViewer ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            title={isViewer ? "Read-only: Save mumkin emas" : "Save (Ctrl+S)"}
-                        >
-                            <Save size={14} />
-                            <span>Save</span>
-                        </button>
+                        <Tooltip label="Save" shortcut="Ctrl+S">
+                            <button
+                                onClick={onSaveFile}
+                                disabled={isViewer}
+                                className={`action-btn primary btn-lift ${isViewer ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                type="button"
+                            >
+                                <Save size={14} />
+                                <span>Save</span>
+                            </button>
+                        </Tooltip>
 
                         {onExport && (
-                            <button onClick={onExport} className="action-btn" title="Export to CSV">
-                                <Download size={14} />
-                                <span>Export</span>
-                            </button>
+                            <Tooltip label="Export">
+                                <button onClick={onExport} className="action-btn" type="button">
+                                    <Download size={14} />
+                                    <span>Export</span>
+                                </button>
+                            </Tooltip>
                         )}
 
                         {onImportFile && (
-                            <label className="action-btn cursor-pointer" title="Import CSV/Excel">
-                                <input
-                                    id="file-input"
-                                    type="file"
-                                    accept=".csv,.xlsx,.xls"
-                                    className="hidden"
-                                    onChange={(e) => {
-                                        const f = e.target.files?.[0];
-                                        if (f) {
-                                            onImportFile(f);
-                                            e.target.value = '';
-                                        }
-                                    }}
-                                />
-                                <Download size={14} />
-                                <span>Import</span>
-                            </label>
+                            <Tooltip label="Import">
+                                <label className="action-btn cursor-pointer">
+                                    <input
+                                        id="file-input"
+                                        type="file"
+                                        accept=".csv,.xlsx,.xls"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                            const f = e.target.files?.[0];
+                                            if (f) {
+                                                onImportFile(f);
+                                                e.target.value = '';
+                                            }
+                                        }}
+                                    />
+                                    <Download size={14} />
+                                    <span>Import</span>
+                                </label>
+                            </Tooltip>
                         )}
 
                         <div className="relative">
-                            <button
-                                onClick={() => setFilesOpen(!filesOpen)}
-                                className="action-btn"
-                                title="Open File"
-                            >
-                                <FolderOpen size={14} />
-                                <span>Open</span>
-                            </button>
+                            <Tooltip label="Open">
+                                <button
+                                    onClick={() => setFilesOpen(!filesOpen)}
+                                    className="action-btn"
+                                    type="button"
+                                >
+                                    <FolderOpen size={14} />
+                                    <span>Open</span>
+                                </button>
+                            </Tooltip>
 
                             {filesPresence.isMounted && (
                                 <>

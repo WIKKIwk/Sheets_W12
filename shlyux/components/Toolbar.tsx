@@ -9,6 +9,7 @@ import {
 import { CellStyle } from '../types';
 import { usePresence } from '../utils/usePresence';
 import ColorPicker from './ColorPicker';
+import Tooltip from './Tooltip';
 
 interface ToolbarProps {
   onStyleChange: (style: Partial<CellStyle>) => void;
@@ -131,49 +132,61 @@ const Toolbar: React.FC<ToolbarProps> = ({
     >
       {/* Undo/Redo */}
       <div className="flex items-center space-x-1 border-r pr-2" style={{ borderColor: 'var(--border-color)' }}>
-        <button
-          className="p-2 rounded transition-colors"
-          onClick={onUndo}
-          disabled={!canUndo}
-          title="Undo (Ctrl+Z)"
-          style={{ color: 'var(--text-primary)', background: 'transparent', opacity: canUndo ? 1 : 0.3, cursor: canUndo ? 'pointer' : 'not-allowed' }}
-          onMouseEnter={(e) => canUndo && (e.currentTarget.style.background = 'var(--bg-light)')}
-          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-        >
-          <Undo2 size={18} />
-        </button>
-        <button
-          className="p-2 rounded transition-colors"
-          onClick={onRedo}
-          disabled={!canRedo}
-          title="Redo (Ctrl+Y)"
-          style={{ color: 'var(--text-primary)', background: 'transparent', opacity: canRedo ? 1 : 0.3, cursor: canRedo ? 'pointer' : 'not-allowed' }}
-          onMouseEnter={(e) => canRedo && (e.currentTarget.style.background = 'var(--bg-light)')}
-          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-        >
-          <Redo2 size={18} />
-        </button>
-        <button
-          className="p-2 rounded transition-colors"
-          onClick={onPrint}
-          title="Print"
-          style={{ color: 'var(--text-primary)', background: 'transparent' }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-light)')}
-          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-        >
-          <Printer size={18} />
-        </button>
+        <Tooltip label="Undo" shortcut="Ctrl+Z">
+          <button
+            className="p-2 rounded transition-colors"
+            onClick={onUndo}
+            disabled={!canUndo}
+            aria-label="Undo"
+            style={{ color: 'var(--text-primary)', background: 'transparent', opacity: canUndo ? 1 : 0.3, cursor: canUndo ? 'pointer' : 'not-allowed' }}
+            onMouseEnter={(e) => canUndo && (e.currentTarget.style.background = 'var(--bg-light)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+            type="button"
+          >
+            <Undo2 size={18} />
+          </button>
+        </Tooltip>
+        <Tooltip label="Redo" shortcut="Ctrl+Y">
+          <button
+            className="p-2 rounded transition-colors"
+            onClick={onRedo}
+            disabled={!canRedo}
+            aria-label="Redo"
+            style={{ color: 'var(--text-primary)', background: 'transparent', opacity: canRedo ? 1 : 0.3, cursor: canRedo ? 'pointer' : 'not-allowed' }}
+            onMouseEnter={(e) => canRedo && (e.currentTarget.style.background = 'var(--bg-light)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+            type="button"
+          >
+            <Redo2 size={18} />
+          </button>
+        </Tooltip>
+        <Tooltip label="Print" shortcut="Ctrl+P">
+          <button
+            className="p-2 rounded transition-colors"
+            onClick={onPrint}
+            aria-label="Print"
+            style={{ color: 'var(--text-primary)', background: 'transparent' }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-light)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+            type="button"
+          >
+            <Printer size={18} />
+          </button>
+        </Tooltip>
       </div>
 
       {/* Format Painter */}
       <div className="flex items-center border-r pr-2" style={{ borderColor: 'var(--border-color)' }}>
-        <button
-          className={btnClass(!!formatPainterActive)}
-          onClick={onFormatPainter}
-          title="Format Painter"
-        >
-          <Paintbrush size={18} />
-        </button>
+        <Tooltip label="Format Painter">
+          <button
+            className={btnClass(!!formatPainterActive)}
+            onClick={onFormatPainter}
+            aria-label="Format Painter"
+            type="button"
+          >
+            <Paintbrush size={18} />
+          </button>
+        </Tooltip>
       </div>
 
       <div className="flex items-center space-x-2 border-r pr-2" style={{ borderColor: 'var(--border-color)' }}>
@@ -260,14 +273,17 @@ const Toolbar: React.FC<ToolbarProps> = ({
           )}
         </div>
         <div className="flex items-center space-x-1">
-          <button
-            className="p-1 rounded hover:bg-gray-100 transition-colors"
-            onClick={() => onStyleChange({ fontSize: Math.max(8, currentSize - 1) })}
-            title="Decrease font size"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            <Minus size={14} />
-          </button>
+          <Tooltip label="Decrease font size">
+            <button
+              className="p-1 rounded hover:bg-gray-100 transition-colors"
+              onClick={() => onStyleChange({ fontSize: Math.max(8, currentSize - 1) })}
+              aria-label="Decrease font size"
+              style={{ color: 'var(--text-primary)' }}
+              type="button"
+            >
+              <Minus size={14} />
+            </button>
+          </Tooltip>
           <select
             value={currentSize}
             onChange={(e) => onStyleChange({ fontSize: parseInt(e.target.value, 10) })}
@@ -278,109 +294,142 @@ const Toolbar: React.FC<ToolbarProps> = ({
               <option key={size} value={size}>{size}</option>
             ))}
           </select>
-          <button
-            className="p-1 rounded hover:bg-gray-100 transition-colors"
-            onClick={() => onStyleChange({ fontSize: Math.min(72, currentSize + 1) })}
-            title="Increase font size"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            <Plus size={14} />
-          </button>
+          <Tooltip label="Increase font size">
+            <button
+              className="p-1 rounded hover:bg-gray-100 transition-colors"
+              onClick={() => onStyleChange({ fontSize: Math.min(72, currentSize + 1) })}
+              aria-label="Increase font size"
+              style={{ color: 'var(--text-primary)' }}
+              type="button"
+            >
+              <Plus size={14} />
+            </button>
+          </Tooltip>
         </div>
       </div>
 
       <div className="flex items-center space-x-1 border-r pr-2" style={{ borderColor: 'var(--border-color)' }}>
-        <button className={btnClass(!!activeStyle.bold)} onClick={() => onStyleChange({ bold: !activeStyle.bold })}>
-          <Bold size={18} />
-        </button>
-        <button className={btnClass(!!activeStyle.italic)} onClick={() => onStyleChange({ italic: !activeStyle.italic })}>
-          <Italic size={18} />
-        </button>
-        <button className={btnClass(!!activeStyle.underline)} onClick={() => onStyleChange({ underline: !activeStyle.underline })}>
-          <Underline size={18} />
-        </button>
+        <Tooltip label="Bold" shortcut="Ctrl+B">
+          <button className={btnClass(!!activeStyle.bold)} onClick={() => onStyleChange({ bold: !activeStyle.bold })} aria-label="Bold" type="button">
+            <Bold size={18} />
+          </button>
+        </Tooltip>
+        <Tooltip label="Italic" shortcut="Ctrl+I">
+          <button className={btnClass(!!activeStyle.italic)} onClick={() => onStyleChange({ italic: !activeStyle.italic })} aria-label="Italic" type="button">
+            <Italic size={18} />
+          </button>
+        </Tooltip>
+        <Tooltip label="Underline" shortcut="Ctrl+U">
+          <button className={btnClass(!!activeStyle.underline)} onClick={() => onStyleChange({ underline: !activeStyle.underline })} aria-label="Underline" type="button">
+            <Underline size={18} />
+          </button>
+        </Tooltip>
       </div>
 
       <div className="flex items-center space-x-1 border-r pr-2" style={{ borderColor: 'var(--border-color)' }}>
-        <button className={btnClass(activeStyle.textAlign === 'left')} onClick={() => onStyleChange({ textAlign: 'left' })}>
-          <AlignLeft size={18} />
-        </button>
-        <button className={btnClass(activeStyle.textAlign === 'center')} onClick={() => onStyleChange({ textAlign: 'center' })}>
-          <AlignCenter size={18} />
-        </button>
-        <button className={btnClass(activeStyle.textAlign === 'right')} onClick={() => onStyleChange({ textAlign: 'right' })}>
-          <AlignRight size={18} />
-        </button>
+        <Tooltip label="Align left">
+          <button className={btnClass(activeStyle.textAlign === 'left')} onClick={() => onStyleChange({ textAlign: 'left' })} aria-label="Align left" type="button">
+            <AlignLeft size={18} />
+          </button>
+        </Tooltip>
+        <Tooltip label="Align center">
+          <button className={btnClass(activeStyle.textAlign === 'center')} onClick={() => onStyleChange({ textAlign: 'center' })} aria-label="Align center" type="button">
+            <AlignCenter size={18} />
+          </button>
+        </Tooltip>
+        <Tooltip label="Align right">
+          <button className={btnClass(activeStyle.textAlign === 'right')} onClick={() => onStyleChange({ textAlign: 'right' })} aria-label="Align right" type="button">
+            <AlignRight size={18} />
+          </button>
+        </Tooltip>
       </div>
 
       {/* Merge Cells */}
       <div className="flex items-center space-x-1 border-r pr-2" style={{ borderColor: 'var(--border-color)' }}>
         {isMerged ? (
-          <button
-            className="p-2 rounded hover:bg-gray-100 transition-colors"
-            onClick={onUnmergeCells}
-            title="Unmerge cells"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            <Merge size={18} />
-          </button>
+          <Tooltip label="Unmerge cells">
+            <button
+              className="p-2 rounded hover:bg-gray-100 transition-colors"
+              onClick={onUnmergeCells}
+              aria-label="Unmerge cells"
+              style={{ color: 'var(--text-primary)' }}
+              type="button"
+            >
+              <Merge size={18} />
+            </button>
+          </Tooltip>
         ) : (
-          <button
-            className="p-2 rounded hover:bg-gray-100 transition-colors"
-            onClick={onMergeCells}
-            title="Merge cells"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            <Merge size={18} />
-          </button>
+          <Tooltip label="Merge cells">
+            <button
+              className="p-2 rounded hover:bg-gray-100 transition-colors"
+              onClick={onMergeCells}
+              aria-label="Merge cells"
+              style={{ color: 'var(--text-primary)' }}
+              type="button"
+            >
+              <Merge size={18} />
+            </button>
+          </Tooltip>
         )}
       </div>
 
       {/* Borders */}
       <div className="flex items-center space-x-1 border-r pr-2" style={{ borderColor: 'var(--border-color)' }}>
-        <button
-          className={btnClass(!!(activeStyle.borders?.top && activeStyle.borders?.right && activeStyle.borders?.bottom && activeStyle.borders?.left))}
-          onClick={() => {
-            const hasAllBorders = activeStyle.borders?.top && activeStyle.borders?.right && activeStyle.borders?.bottom && activeStyle.borders?.left;
-            onStyleChange({
-              borders: hasAllBorders ? {} : {
-                top: true,
-                right: true,
-                bottom: true,
-                left: true,
-                color: 'var(--text-primary)',
-                style: 'solid'
-              }
-            });
-          }}
-          title="All borders"
-        >
-          <Square size={18} />
-        </button>
+        <Tooltip label="All borders">
+          <button
+            className={btnClass(!!(activeStyle.borders?.top && activeStyle.borders?.right && activeStyle.borders?.bottom && activeStyle.borders?.left))}
+            onClick={() => {
+              const hasAllBorders = activeStyle.borders?.top && activeStyle.borders?.right && activeStyle.borders?.bottom && activeStyle.borders?.left;
+              onStyleChange({
+                borders: hasAllBorders ? {} : {
+                  top: true,
+                  right: true,
+                  bottom: true,
+                  left: true,
+                  color: 'var(--text-primary)',
+                  style: 'solid'
+                }
+              });
+            }}
+            aria-label="All borders"
+            type="button"
+          >
+            <Square size={18} />
+          </button>
+        </Tooltip>
       </div>
 
       <div className="flex items-center space-x-1 border-r pr-2" style={{ borderColor: 'var(--border-color)' }}>
-        <button
-          className={btnClass(currentVertical === 'top')}
-          onClick={() => onStyleChange({ verticalAlign: 'top' })}
-          title="Align Top"
-        >
-          <AlignVerticalJustifyStart size={18} />
-        </button>
-        <button
-          className={btnClass(currentVertical === 'middle')}
-          onClick={() => onStyleChange({ verticalAlign: 'middle' })}
-          title="Align Middle"
-        >
-          <AlignVerticalJustifyCenter size={18} />
-        </button>
-        <button
-          className={btnClass(currentVertical === 'bottom')}
-          onClick={() => onStyleChange({ verticalAlign: 'bottom' })}
-          title="Align Bottom"
-        >
-          <AlignVerticalJustifyEnd size={18} />
-        </button>
+        <Tooltip label="Align top">
+          <button
+            className={btnClass(currentVertical === 'top')}
+            onClick={() => onStyleChange({ verticalAlign: 'top' })}
+            aria-label="Align top"
+            type="button"
+          >
+            <AlignVerticalJustifyStart size={18} />
+          </button>
+        </Tooltip>
+        <Tooltip label="Align middle">
+          <button
+            className={btnClass(currentVertical === 'middle')}
+            onClick={() => onStyleChange({ verticalAlign: 'middle' })}
+            aria-label="Align middle"
+            type="button"
+          >
+            <AlignVerticalJustifyCenter size={18} />
+          </button>
+        </Tooltip>
+        <Tooltip label="Align bottom">
+          <button
+            className={btnClass(currentVertical === 'bottom')}
+            onClick={() => onStyleChange({ verticalAlign: 'bottom' })}
+            aria-label="Align bottom"
+            type="button"
+          >
+            <AlignVerticalJustifyEnd size={18} />
+          </button>
+        </Tooltip>
       </div>
 
       <div className="flex items-center space-x-2 border-r pr-2" style={{ borderColor: 'var(--border-color)' }}>
@@ -492,28 +541,34 @@ const Toolbar: React.FC<ToolbarProps> = ({
       )}
 
       {onOpenFindReplace && (
-        <button
-          onClick={onOpenFindReplace}
-          className="flex items-center justify-center w-9 h-9 rounded border hover:bg-gray-100 shadow-sm"
-          style={{ borderColor: 'var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }}
-          title="Qidirish (Ctrl+F)"
-        >
-          <Search size={16} />
-        </button>
+        <Tooltip label="Qidirish" shortcut="Ctrl+F">
+          <button
+            onClick={onOpenFindReplace}
+            className="flex items-center justify-center w-9 h-9 rounded border hover:bg-gray-100 shadow-sm"
+            style={{ borderColor: 'var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }}
+            aria-label="Qidirish"
+            type="button"
+          >
+            <Search size={16} />
+          </button>
+        </Tooltip>
       )}
 
-      <button
-        onClick={onToggleAi}
-        className="flex items-center justify-center w-9 h-9 rounded border hover:bg-gray-100 shadow-sm"
-        style={{
-          borderColor: isAiOpen ? 'var(--primary)' : 'var(--border-color)',
-          background: isAiOpen ? 'var(--bg-light)' : 'var(--card-bg)',
-          color: 'var(--text-primary)'
-        }}
-        title={isAiOpen ? "AI (yopish)" : 'AI'}
-      >
-        {isAiOpen ? <X size={16} /> : <Sparkles size={16} />}
-      </button>
+      <Tooltip label={isAiOpen ? 'AI (yopish)' : 'AI'}>
+        <button
+          onClick={onToggleAi}
+          className="flex items-center justify-center w-9 h-9 rounded border hover:bg-gray-100 shadow-sm"
+          style={{
+            borderColor: isAiOpen ? 'var(--primary)' : 'var(--border-color)',
+            background: isAiOpen ? 'var(--bg-light)' : 'var(--card-bg)',
+            color: 'var(--text-primary)'
+          }}
+          aria-label="AI"
+          type="button"
+        >
+          {isAiOpen ? <X size={16} /> : <Sparkles size={16} />}
+        </button>
+      </Tooltip>
     </div>
   );
 };

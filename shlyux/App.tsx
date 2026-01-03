@@ -1776,6 +1776,36 @@ const App: React.FC = () => {
     }
   };
 
+  const toggleSelectionStyle = useCallback((key: 'bold' | 'italic' | 'underline') => {
+    if (!ensureWritable('format')) return;
+    const base = latestSheetRef.current;
+    if (!base.selection || !base.activeCell) return;
+
+    const activeId = getCellId(base.activeCell.row, base.activeCell.col);
+    const currentStyle = (base.data[activeId]?.style || {}) as any;
+    const nextValue = !currentStyle?.[key];
+
+    const { start, end } = base.selection;
+    const minR = Math.min(start.row, end.row);
+    const maxR = Math.max(start.row, end.row);
+    const minC = Math.min(start.col, end.col);
+    const maxC = Math.max(start.col, end.col);
+
+    const newData = { ...base.data };
+    for (let r = minR; r <= maxR; r++) {
+      for (let c = minC; c <= maxC; c++) {
+        const id = getCellId(r, c);
+        const cell = newData[id] || { value: '' };
+        newData[id] = {
+          ...cell,
+          style: { ...(cell as any).style, [key]: nextValue },
+        };
+      }
+    }
+
+    saveState({ ...base, data: newData });
+  }, [ensureWritable, saveState]);
+
   const handlePrint = () => {
     window.print();
   };
@@ -2212,6 +2242,14 @@ const App: React.FC = () => {
       if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
       if (!sheet.activeCell) return;
 
+      if ((e.ctrlKey || e.metaKey) && (keyLower === 'b' || keyLower === 'i' || keyLower === 'u')) {
+        e.preventDefault();
+        if (keyLower === 'b') toggleSelectionStyle('bold');
+        else if (keyLower === 'i') toggleSelectionStyle('italic');
+        else toggleSelectionStyle('underline');
+        return;
+      }
+
       let { row, col } = sheet.activeCell;
 
       const key = typeof e.key === 'string' ? e.key : '';
@@ -2259,7 +2297,7 @@ const App: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [sheet.activeCell, undo, redo, handleSaveFile, startEditing, handleCopy, handleCut, handlePaste, handleDelete, ensureWritable]);
+  }, [sheet.activeCell, undo, redo, handleSaveFile, toggleSelectionStyle, startEditing, handleCopy, handleCut, handlePaste, handleDelete, ensureWritable]);
 
   // Handle paste event to capture files from clipboard (e.g., when copying files from file manager)
   useEffect(() => {
