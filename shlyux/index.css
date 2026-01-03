@@ -385,6 +385,25 @@ textarea,
 }
 
 /* ============================================
+   BUTTON STATES
+   ============================================ */
+
+.icon-btn.is-active {
+  background: var(--sheet-selection-fill-weak);
+  border-color: var(--sheet-selection-border);
+  color: var(--brand);
+}
+
+.icon-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.icon-btn:disabled:hover {
+  box-shadow: none;
+}
+
+/* ============================================
    FUNCTION PICKER POPOVER
    ============================================ */
 

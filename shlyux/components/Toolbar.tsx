@@ -58,8 +58,9 @@ const Toolbar: React.FC<ToolbarProps> = ({
   const moreRef = useRef<HTMLDivElement>(null);
   const morePresence = usePresence(moreOpen, { exitDurationMs: 240 });
 
-  const btnClass = (active: boolean) =>
-    `p-2 rounded hover:bg-gray-100 transition-colors ${active ? 'bg-blue-100 text-blue-600 border border-blue-300' : 'text-primary'}`;
+  const controlSize = density === 'compact' ? 28 : 32;
+  const iconBtnStyle: React.CSSProperties = { width: controlSize, height: controlSize };
+  const iconBtnClass = (active: boolean) => `icon-btn${active ? ' is-active' : ''}`;
 
   const FONT_FAMILIES = [
     'Inter',
@@ -145,43 +146,37 @@ const Toolbar: React.FC<ToolbarProps> = ({
       <div className="flex items-center space-x-1 border-r pr-2" style={{ borderColor: 'var(--border-color)' }}>
         <Tooltip label="Undo" shortcut="Ctrl+Z">
           <button
-            className="p-2 rounded transition-colors"
+            className="icon-btn"
             onClick={onUndo}
             disabled={!canUndo}
             aria-label="Undo"
-            style={{ color: 'var(--text-primary)', background: 'transparent', opacity: canUndo ? 1 : 0.3, cursor: canUndo ? 'pointer' : 'not-allowed' }}
-            onMouseEnter={(e) => canUndo && (e.currentTarget.style.background = 'var(--bg-light)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+            style={iconBtnStyle}
             type="button"
           >
-            <Undo2 size={18} />
+            <Undo2 size={16} />
           </button>
         </Tooltip>
         <Tooltip label="Redo" shortcut="Ctrl+Y">
           <button
-            className="p-2 rounded transition-colors"
+            className="icon-btn"
             onClick={onRedo}
             disabled={!canRedo}
             aria-label="Redo"
-            style={{ color: 'var(--text-primary)', background: 'transparent', opacity: canRedo ? 1 : 0.3, cursor: canRedo ? 'pointer' : 'not-allowed' }}
-            onMouseEnter={(e) => canRedo && (e.currentTarget.style.background = 'var(--bg-light)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+            style={iconBtnStyle}
             type="button"
           >
-            <Redo2 size={18} />
+            <Redo2 size={16} />
           </button>
         </Tooltip>
         <Tooltip label="Print" shortcut="Ctrl+P">
           <button
-            className="p-2 rounded transition-colors"
+            className="icon-btn"
             onClick={onPrint}
             aria-label="Print"
-            style={{ color: 'var(--text-primary)', background: 'transparent' }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-light)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+            style={iconBtnStyle}
             type="button"
           >
-            <Printer size={18} />
+            <Printer size={16} />
           </button>
         </Tooltip>
       </div>
@@ -190,12 +185,13 @@ const Toolbar: React.FC<ToolbarProps> = ({
       <div className="flex items-center border-r pr-2" style={{ borderColor: 'var(--border-color)' }}>
         <Tooltip label="Format Painter">
           <button
-            className={btnClass(!!formatPainterActive)}
+            className={iconBtnClass(!!formatPainterActive)}
             onClick={onFormatPainter}
             aria-label="Format Painter"
+            style={iconBtnStyle}
             type="button"
           >
-            <Paintbrush size={18} />
+            <Paintbrush size={16} />
           </button>
         </Tooltip>
       </div>
@@ -205,17 +201,23 @@ const Toolbar: React.FC<ToolbarProps> = ({
         <div className="relative" ref={fontDropdownRef}>
           <button
             onClick={() => setShowFontDropdown(!showFontDropdown)}
-            className="h-8 px-3 pr-8 text-sm border rounded flex items-center justify-between hover:bg-gray-50 transition-colors relative min-w-[140px]"
+            className="action-btn"
             style={{
-              borderColor: 'var(--border-color)',
+              height: controlSize,
+              minWidth: 140,
+              position: 'relative',
+              justifyContent: 'flex-start',
+              paddingRight: 32,
+              borderColor: 'var(--chrome-border)',
               background: 'var(--chrome-control-bg)',
               color: 'var(--text-primary)',
               fontFamily: currentFont
             }}
+            type="button"
           >
             <span className="truncate">{currentFont}</span>
             <ChevronDown
-              size={14}
+              size={16}
               className="absolute right-2 top-1/2 -translate-y-1/2 transition-transform duration-200"
               style={{ transform: showFontDropdown ? 'translateY(-50%) rotate(180deg)' : 'translateY(-50%)' }}
             />
@@ -286,10 +288,10 @@ const Toolbar: React.FC<ToolbarProps> = ({
         <div className="flex items-center space-x-1">
           <Tooltip label="Decrease font size">
             <button
-              className="p-1 rounded hover:bg-gray-100 transition-colors"
+              className="icon-btn"
               onClick={() => onStyleChange({ fontSize: Math.max(8, currentSize - 1) })}
               aria-label="Decrease font size"
-              style={{ color: 'var(--text-primary)' }}
+              style={iconBtnStyle}
               type="button"
             >
               <Minus size={14} />
@@ -298,8 +300,14 @@ const Toolbar: React.FC<ToolbarProps> = ({
           <select
             value={currentSize}
             onChange={(e) => onStyleChange({ fontSize: parseInt(e.target.value, 10) })}
-            className="h-8 px-2 text-sm border rounded w-16"
-            style={{ borderColor: 'var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }}
+            className="px-2 text-sm border w-16"
+            style={{
+              height: controlSize,
+              borderColor: 'var(--chrome-border)',
+              background: 'var(--chrome-control-bg)',
+              borderRadius: 'var(--radius-sm)',
+              color: 'var(--text-primary)'
+            }}
           >
             {FONT_SIZES.map(size => (
               <option key={size} value={size}>{size}</option>
@@ -307,10 +315,10 @@ const Toolbar: React.FC<ToolbarProps> = ({
           </select>
           <Tooltip label="Increase font size">
             <button
-              className="p-1 rounded hover:bg-gray-100 transition-colors"
+              className="icon-btn"
               onClick={() => onStyleChange({ fontSize: Math.min(72, currentSize + 1) })}
               aria-label="Increase font size"
-              style={{ color: 'var(--text-primary)' }}
+              style={iconBtnStyle}
               type="button"
             >
               <Plus size={14} />
@@ -321,43 +329,43 @@ const Toolbar: React.FC<ToolbarProps> = ({
 
       <div className="flex items-center space-x-1 border-r pr-2" style={{ borderColor: 'var(--border-color)' }}>
         <Tooltip label="Bold" shortcut="Ctrl+B">
-          <button className={btnClass(!!activeStyle.bold)} onClick={() => onStyleChange({ bold: !activeStyle.bold })} aria-label="Bold" type="button">
-            <Bold size={18} />
+          <button className={iconBtnClass(!!activeStyle.bold)} style={iconBtnStyle} onClick={() => onStyleChange({ bold: !activeStyle.bold })} aria-label="Bold" type="button">
+            <Bold size={16} />
           </button>
         </Tooltip>
         <Tooltip label="Italic" shortcut="Ctrl+I">
-          <button className={btnClass(!!activeStyle.italic)} onClick={() => onStyleChange({ italic: !activeStyle.italic })} aria-label="Italic" type="button">
-            <Italic size={18} />
+          <button className={iconBtnClass(!!activeStyle.italic)} style={iconBtnStyle} onClick={() => onStyleChange({ italic: !activeStyle.italic })} aria-label="Italic" type="button">
+            <Italic size={16} />
           </button>
         </Tooltip>
         <Tooltip label="Underline" shortcut="Ctrl+U">
-          <button className={btnClass(!!activeStyle.underline)} onClick={() => onStyleChange({ underline: !activeStyle.underline })} aria-label="Underline" type="button">
-            <Underline size={18} />
+          <button className={iconBtnClass(!!activeStyle.underline)} style={iconBtnStyle} onClick={() => onStyleChange({ underline: !activeStyle.underline })} aria-label="Underline" type="button">
+            <Underline size={16} />
           </button>
         </Tooltip>
       </div>
 
       <div className="flex items-center space-x-1 border-r pr-2" style={{ borderColor: 'var(--border-color)' }}>
         <Tooltip label="Align left">
-          <button className={btnClass(activeStyle.textAlign === 'left')} onClick={() => onStyleChange({ textAlign: 'left' })} aria-label="Align left" type="button">
-            <AlignLeft size={18} />
+          <button className={iconBtnClass(activeStyle.textAlign === 'left')} style={iconBtnStyle} onClick={() => onStyleChange({ textAlign: 'left' })} aria-label="Align left" type="button">
+            <AlignLeft size={16} />
           </button>
         </Tooltip>
         <Tooltip label="Align center">
-          <button className={btnClass(activeStyle.textAlign === 'center')} onClick={() => onStyleChange({ textAlign: 'center' })} aria-label="Align center" type="button">
-            <AlignCenter size={18} />
+          <button className={iconBtnClass(activeStyle.textAlign === 'center')} style={iconBtnStyle} onClick={() => onStyleChange({ textAlign: 'center' })} aria-label="Align center" type="button">
+            <AlignCenter size={16} />
           </button>
         </Tooltip>
         <Tooltip label="Align right">
-          <button className={btnClass(activeStyle.textAlign === 'right')} onClick={() => onStyleChange({ textAlign: 'right' })} aria-label="Align right" type="button">
-            <AlignRight size={18} />
+          <button className={iconBtnClass(activeStyle.textAlign === 'right')} style={iconBtnStyle} onClick={() => onStyleChange({ textAlign: 'right' })} aria-label="Align right" type="button">
+            <AlignRight size={16} />
           </button>
         </Tooltip>
       </div>
 
       <div className="flex items-center space-x-2 border-r pr-2" style={{ borderColor: 'var(--border-color)' }}>
         <div className="flex items-center space-x-1">
-          <Type size={18} style={{ color: 'var(--text-secondary)' }} />
+          <Type size={16} style={{ color: 'var(--text-secondary)' }} />
           <ColorPicker
             title="Matn rangi"
             value={activeStyle.color}
@@ -367,7 +375,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
           />
         </div>
         <div className="flex items-center space-x-1">
-          <PaintBucket size={18} style={{ color: 'var(--text-secondary)' }} />
+          <PaintBucket size={16} style={{ color: 'var(--text-secondary)' }} />
           <ColorPicker
             title="Katak rangi"
             value={activeStyle.backgroundColor}
@@ -384,8 +392,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
           <button
             type="button"
             onClick={() => setMoreOpen((v) => !v)}
-            className="flex items-center justify-center w-9 h-9 rounded border hover:bg-gray-100 shadow-sm"
-            style={{ borderColor: 'var(--chrome-border)', background: 'var(--chrome-control-bg)', color: 'var(--text-primary)' }}
+            className={iconBtnClass(moreOpen)}
+            style={iconBtnStyle}
             aria-label="More"
           >
             <MoreHorizontal size={16} />
@@ -459,24 +467,27 @@ const Toolbar: React.FC<ToolbarProps> = ({
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                className={btnClass(currentVertical === 'top')}
+                className={iconBtnClass(currentVertical === 'top')}
+                style={iconBtnStyle}
                 onClick={() => onStyleChange({ verticalAlign: 'top' })}
               >
-                <AlignVerticalJustifyStart size={18} />
+                <AlignVerticalJustifyStart size={16} />
               </button>
               <button
                 type="button"
-                className={btnClass(currentVertical === 'middle')}
+                className={iconBtnClass(currentVertical === 'middle')}
+                style={iconBtnStyle}
                 onClick={() => onStyleChange({ verticalAlign: 'middle' })}
               >
-                <AlignVerticalJustifyCenter size={18} />
+                <AlignVerticalJustifyCenter size={16} />
               </button>
               <button
                 type="button"
-                className={btnClass(currentVertical === 'bottom')}
+                className={iconBtnClass(currentVertical === 'bottom')}
+                style={iconBtnStyle}
                 onClick={() => onStyleChange({ verticalAlign: 'bottom' })}
               >
-                <AlignVerticalJustifyEnd size={18} />
+                <AlignVerticalJustifyEnd size={16} />
               </button>
 
               <div className="ml-auto flex items-center gap-1">
@@ -563,15 +574,18 @@ const Toolbar: React.FC<ToolbarProps> = ({
       {/* Auto Save Toggle */}
       {onToggleAutoSave && (
         <button
+          type="button"
           onClick={onToggleAutoSave}
-          className={`flex items-center gap-1.5 px-3 h-9 rounded border shadow-sm transition-all ${autoSaveEnabled ? 'border-green-400' : ''}`}
-          style={{ borderColor: autoSaveEnabled ? '#4ade80' : 'var(--chrome-border)', background: autoSaveEnabled ? '#f0fdf4' : 'var(--chrome-control-bg)' }}
+          className="action-btn"
+          style={{
+            height: controlSize,
+            borderColor: autoSaveEnabled ? '#22c55e' : 'var(--chrome-border)',
+            background: autoSaveEnabled ? 'rgba(34, 197, 94, 0.14)' : 'var(--chrome-control-bg)',
+          }}
           title={autoSaveEnabled ? "Auto Save yoqilgan" : "Auto Save o'chirilgan"}
-          onMouseEnter={(e) => !autoSaveEnabled && (e.currentTarget.style.background = 'var(--bg-light)')}
-          onMouseLeave={(e) => !autoSaveEnabled && (e.currentTarget.style.background = 'var(--chrome-control-bg)')}
         >
-          <Save size={14} className={autoSaveEnabled ? 'text-green-600' : 'text-gray-600'} />
-          <span className={`text-xs font-medium ${autoSaveEnabled ? 'text-green-700' : 'text-gray-700'}`}>
+          <Save size={14} style={{ color: autoSaveEnabled ? '#16a34a' : 'var(--text-secondary)' }} />
+          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: autoSaveEnabled ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
             Auto Save
           </span>
         </button>
@@ -581,8 +595,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
         <Tooltip label="Qidirish" shortcut="Ctrl+F">
           <button
             onClick={onOpenFindReplace}
-            className="flex items-center justify-center w-9 h-9 rounded border hover:bg-gray-100 shadow-sm"
-            style={{ borderColor: 'var(--chrome-border)', background: 'var(--chrome-control-bg)', color: 'var(--text-primary)' }}
+            className="icon-btn"
+            style={iconBtnStyle}
             aria-label="Qidirish"
             type="button"
           >
@@ -594,12 +608,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
       <Tooltip label={isAiOpen ? 'AI (yopish)' : 'AI'}>
         <button
           onClick={onToggleAi}
-          className="flex items-center justify-center w-9 h-9 rounded border hover:bg-gray-100 shadow-sm"
-          style={{
-            borderColor: isAiOpen ? 'var(--brand)' : 'var(--chrome-border)',
-            background: isAiOpen ? 'var(--bg-light)' : 'var(--chrome-control-bg)',
-            color: 'var(--text-primary)'
-          }}
+          className={iconBtnClass(!!isAiOpen)}
+          style={iconBtnStyle}
           aria-label="AI"
           type="button"
         >

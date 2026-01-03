@@ -118,8 +118,8 @@ export default function ColorPicker({
     <div className="relative" ref={containerRef}>
       <button
         type="button"
-        className="h-8 px-2 rounded border inline-flex items-center gap-1 hover:bg-gray-50 transition-colors"
-        style={{ borderColor: 'var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }}
+        className="action-btn"
+        style={{ borderColor: 'var(--chrome-border)', background: 'var(--chrome-control-bg)', color: 'var(--text-primary)' }}
         onClick={() => setOpen((p) => !p)}
         title={title}
         aria-label={title}
