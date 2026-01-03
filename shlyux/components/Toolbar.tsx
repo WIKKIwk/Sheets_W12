@@ -1,10 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import ReactDOM from 'react-dom';
 import {
   Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight,
   Type, PaintBucket, Sparkles, Search, X, Undo2, Redo2, Eraser,
   AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd,
-  TextWrap, Printer, Paintbrush, Merge, Square, Plus, Minus, Save, ChevronDown
+  TextWrap, Printer, Paintbrush, Merge, Square, Plus, Minus, Save, ChevronDown, MoreHorizontal
 } from 'lucide-react';
 import { CellStyle } from '../types';
 import { usePresence } from '../utils/usePresence';
@@ -55,6 +54,9 @@ const Toolbar: React.FC<ToolbarProps> = ({
   const [showFontDropdown, setShowFontDropdown] = useState(false);
   const fontDropdownRef = useRef<HTMLDivElement>(null);
   const fontDropdownPresence = usePresence(showFontDropdown, { exitDurationMs: 180 });
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLDivElement>(null);
+  const morePresence = usePresence(moreOpen, { exitDurationMs: 180 });
 
   const btnClass = (active: boolean) =>
     `p-2 rounded hover:bg-gray-100 transition-colors ${active ? 'bg-blue-100 text-blue-600 border border-blue-300' : 'text-primary'}`;
@@ -94,13 +96,16 @@ const Toolbar: React.FC<ToolbarProps> = ({
       if (fontDropdownRef.current && !fontDropdownRef.current.contains(event.target as Node)) {
         setShowFontDropdown(false);
       }
+      if (moreRef.current && !moreRef.current.contains(event.target as Node)) {
+        setMoreOpen(false);
+      }
     };
 
-    if (showFontDropdown) {
+    if (showFontDropdown || moreOpen) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [showFontDropdown]);
+  }, [showFontDropdown, moreOpen]);
   const FONT_SIZES = [8, 10, 12, 13, 14, 16, 18, 24, 32, 48];
   const NUMBER_FORMATS: { label: string; value: CellStyle['numberFormat'] }[] = [
     { label: 'General', value: 'general' },
@@ -344,149 +349,6 @@ const Toolbar: React.FC<ToolbarProps> = ({
         </Tooltip>
       </div>
 
-      {/* Merge Cells */}
-      <div className="flex items-center space-x-1 border-r pr-2" style={{ borderColor: 'var(--border-color)' }}>
-        {isMerged ? (
-          <Tooltip label="Unmerge cells">
-            <button
-              className="p-2 rounded hover:bg-gray-100 transition-colors"
-              onClick={onUnmergeCells}
-              aria-label="Unmerge cells"
-              style={{ color: 'var(--text-primary)' }}
-              type="button"
-            >
-              <Merge size={18} />
-            </button>
-          </Tooltip>
-        ) : (
-          <Tooltip label="Merge cells">
-            <button
-              className="p-2 rounded hover:bg-gray-100 transition-colors"
-              onClick={onMergeCells}
-              aria-label="Merge cells"
-              style={{ color: 'var(--text-primary)' }}
-              type="button"
-            >
-              <Merge size={18} />
-            </button>
-          </Tooltip>
-        )}
-      </div>
-
-      {/* Borders */}
-      <div className="flex items-center space-x-1 border-r pr-2" style={{ borderColor: 'var(--border-color)' }}>
-        <Tooltip label="All borders">
-          <button
-            className={btnClass(!!(activeStyle.borders?.top && activeStyle.borders?.right && activeStyle.borders?.bottom && activeStyle.borders?.left))}
-            onClick={() => {
-              const hasAllBorders = activeStyle.borders?.top && activeStyle.borders?.right && activeStyle.borders?.bottom && activeStyle.borders?.left;
-              onStyleChange({
-                borders: hasAllBorders ? {} : {
-                  top: true,
-                  right: true,
-                  bottom: true,
-                  left: true,
-                  color: 'var(--text-primary)',
-                  style: 'solid'
-                }
-              });
-            }}
-            aria-label="All borders"
-            type="button"
-          >
-            <Square size={18} />
-          </button>
-        </Tooltip>
-      </div>
-
-      <div className="flex items-center space-x-1 border-r pr-2" style={{ borderColor: 'var(--border-color)' }}>
-        <Tooltip label="Align top">
-          <button
-            className={btnClass(currentVertical === 'top')}
-            onClick={() => onStyleChange({ verticalAlign: 'top' })}
-            aria-label="Align top"
-            type="button"
-          >
-            <AlignVerticalJustifyStart size={18} />
-          </button>
-        </Tooltip>
-        <Tooltip label="Align middle">
-          <button
-            className={btnClass(currentVertical === 'middle')}
-            onClick={() => onStyleChange({ verticalAlign: 'middle' })}
-            aria-label="Align middle"
-            type="button"
-          >
-            <AlignVerticalJustifyCenter size={18} />
-          </button>
-        </Tooltip>
-        <Tooltip label="Align bottom">
-          <button
-            className={btnClass(currentVertical === 'bottom')}
-            onClick={() => onStyleChange({ verticalAlign: 'bottom' })}
-            aria-label="Align bottom"
-            type="button"
-          >
-            <AlignVerticalJustifyEnd size={18} />
-          </button>
-        </Tooltip>
-      </div>
-
-      <div className="flex items-center space-x-2 border-r pr-2" style={{ borderColor: 'var(--border-color)' }}>
-        <div className="flex items-center space-x-1">
-          {['overflow', 'wrap', 'clip'].map(mode => (
-            <button
-              key={mode}
-              className="px-2 py-1 text-xs rounded border hover:opacity-80 transition-opacity"
-              style={{
-                borderColor: currentWrap === mode ? 'var(--sheet-selection-border)' : 'var(--border-color)',
-                background: currentWrap === mode ? 'var(--sheet-selection-fill-weak)' : 'var(--card-bg)',
-                color: currentWrap === mode ? 'var(--brand)' : 'var(--text-primary)'
-              }}
-              onClick={() => onStyleChange({ wrapMode: mode as CellStyle['wrapMode'] })}
-            >
-              {mode === 'wrap' ? <TextWrap size={16} /> : mode.charAt(0).toUpperCase() + mode.slice(1)}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex items-center space-x-2 border-r pr-2" style={{ borderColor: 'var(--border-color)' }}>
-        <select
-          value={currentFormat}
-          onChange={(e) => onStyleChange({ numberFormat: e.target.value as CellStyle['numberFormat'] })}
-          className="h-8 px-2 text-sm border rounded"
-          style={{ borderColor: 'var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }}
-        >
-          {NUMBER_FORMATS.map(format => (
-            <option key={format.value || 'general'} value={format.value || 'general'}>
-              {format.label}
-            </option>
-          ))}
-        </select>
-        <button
-          className="px-2 py-1 rounded border text-sm hover:bg-gray-100"
-          style={{ borderColor: 'var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }}
-          onClick={() => handleDecimalChange(-1)}
-        >
-          -.0
-        </button>
-        <button
-          className="px-2 py-1 rounded border text-sm hover:bg-gray-100"
-          style={{ borderColor: 'var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }}
-          onClick={() => handleDecimalChange(1)}
-        >
-          +.0
-        </button>
-        <button
-          className="px-2 py-1 rounded border text-sm hover:bg-gray-100"
-          style={{ borderColor: 'var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }}
-          onClick={() => onStyleChange({ numberFormat: 'percent', decimalPlaces: currentDecimals })}
-        >
-          %
-        </button>
-      </div>
-
       <div className="flex items-center space-x-2 border-r pr-2" style={{ borderColor: 'var(--border-color)' }}>
         <div className="flex items-center space-x-1">
           <Type size={18} style={{ color: 'var(--text-secondary)' }} />
@@ -510,15 +372,184 @@ const Toolbar: React.FC<ToolbarProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center space-x-2 border-r pr-2" style={{ borderColor: 'var(--border-color)' }}>
-        <button
-          className="flex items-center px-3 py-2 rounded border hover:bg-gray-100 text-sm"
-          style={{ borderColor: 'var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }}
-          onClick={() => onStyleChange({ __reset: true } as any)}
-        >
-          <Eraser size={16} className="mr-1" />
-          Clear
-        </button>
+      {/* More */}
+      <div className="relative flex items-center border-r pr-2" style={{ borderColor: 'var(--border-color)' }} ref={moreRef}>
+        <Tooltip label="More">
+          <button
+            type="button"
+            onClick={() => setMoreOpen((v) => !v)}
+            className="flex items-center justify-center w-9 h-9 rounded border hover:bg-gray-100 shadow-sm"
+            style={{ borderColor: 'var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }}
+            aria-label="More"
+          >
+            <MoreHorizontal size={16} />
+          </button>
+        </Tooltip>
+
+        {morePresence.isMounted && (
+          <div
+            className="ui-popover"
+            data-state={morePresence.state}
+            style={{
+              position: 'absolute',
+              right: 0,
+              top: '100%',
+              marginTop: 8,
+              width: 360,
+              background: 'var(--card-bg)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 12,
+              boxShadow: 'var(--shadow-lg)',
+              padding: 12,
+              zIndex: 9999,
+            }}
+          >
+            <div className="text-[11px] font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--text-secondary)' }}>
+              Cells
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (isMerged) onUnmergeCells?.();
+                  else onMergeCells?.();
+                  setMoreOpen(false);
+                }}
+                className="flex items-center gap-2 px-3 py-2 rounded border hover:bg-gray-100 text-sm"
+                style={{ borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+              >
+                <Merge size={16} />
+                <span>{isMerged ? 'Unmerge' : 'Merge'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const hasAllBorders = activeStyle.borders?.top && activeStyle.borders?.right && activeStyle.borders?.bottom && activeStyle.borders?.left;
+                  onStyleChange({
+                    borders: hasAllBorders
+                      ? {}
+                      : {
+                          top: true,
+                          right: true,
+                          bottom: true,
+                          left: true,
+                          color: 'var(--text-primary)',
+                          style: 'solid',
+                        },
+                  });
+                }}
+                className="flex items-center gap-2 px-3 py-2 rounded border hover:bg-gray-100 text-sm"
+                style={{ borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+              >
+                <Square size={16} />
+                <span>All borders</span>
+              </button>
+            </div>
+
+            <div className="mt-4 text-[11px] font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--text-secondary)' }}>
+              Alignment
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className={btnClass(currentVertical === 'top')}
+                onClick={() => onStyleChange({ verticalAlign: 'top' })}
+              >
+                <AlignVerticalJustifyStart size={18} />
+              </button>
+              <button
+                type="button"
+                className={btnClass(currentVertical === 'middle')}
+                onClick={() => onStyleChange({ verticalAlign: 'middle' })}
+              >
+                <AlignVerticalJustifyCenter size={18} />
+              </button>
+              <button
+                type="button"
+                className={btnClass(currentVertical === 'bottom')}
+                onClick={() => onStyleChange({ verticalAlign: 'bottom' })}
+              >
+                <AlignVerticalJustifyEnd size={18} />
+              </button>
+
+              <div className="ml-auto flex items-center gap-1">
+                {(['overflow', 'wrap', 'clip'] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    className="px-2 py-1 text-xs rounded border hover:opacity-80 transition-opacity"
+                    style={{
+                      borderColor: currentWrap === mode ? 'var(--sheet-selection-border)' : 'var(--border-color)',
+                      background: currentWrap === mode ? 'var(--sheet-selection-fill-weak)' : 'var(--card-bg)',
+                      color: currentWrap === mode ? 'var(--brand)' : 'var(--text-primary)',
+                    }}
+                    onClick={() => onStyleChange({ wrapMode: mode })}
+                  >
+                    {mode === 'wrap' ? <TextWrap size={16} /> : mode.charAt(0).toUpperCase() + mode.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-4 text-[11px] font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--text-secondary)' }}>
+              Number format
+            </div>
+            <div className="flex items-center gap-2">
+              <select
+                value={currentFormat}
+                onChange={(e) => onStyleChange({ numberFormat: e.target.value as CellStyle['numberFormat'] })}
+                className="h-9 px-2 text-sm border rounded flex-1"
+                style={{ borderColor: 'var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }}
+              >
+                {NUMBER_FORMATS.map((format) => (
+                  <option key={format.value || 'general'} value={format.value || 'general'}>
+                    {format.label}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="px-2 py-1 rounded border text-sm hover:bg-gray-100"
+                style={{ borderColor: 'var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }}
+                onClick={() => handleDecimalChange(-1)}
+              >
+                -.0
+              </button>
+              <button
+                type="button"
+                className="px-2 py-1 rounded border text-sm hover:bg-gray-100"
+                style={{ borderColor: 'var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }}
+                onClick={() => handleDecimalChange(1)}
+              >
+                +.0
+              </button>
+              <button
+                type="button"
+                className="px-2 py-1 rounded border text-sm hover:bg-gray-100"
+                style={{ borderColor: 'var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }}
+                onClick={() => onStyleChange({ numberFormat: 'percent', decimalPlaces: currentDecimals })}
+              >
+                %
+              </button>
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                className="flex items-center gap-2 px-3 py-2 rounded border hover:bg-gray-100 text-sm"
+                style={{ borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                onClick={() => {
+                  onStyleChange({ __reset: true } as any);
+                  setMoreOpen(false);
+                }}
+              >
+                <Eraser size={16} />
+                Clear
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex-1"></div>
