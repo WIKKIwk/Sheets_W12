@@ -56,6 +56,8 @@ const FormulaBar: React.FC<FormulaBarProps> = ({ activeCellLabel, value, onChang
       className="flex items-center px-2 space-x-2 z-10"
       style={{
         height: barHeight,
+        position: 'relative',
+        zIndex: 25,
         borderBottom: '1px solid var(--chrome-border)',
         background: 'var(--chrome-bg)',
         backdropFilter: 'blur(18px) saturate(180%)',

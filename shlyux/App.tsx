@@ -2879,9 +2879,9 @@ const App: React.FC = () => {
             density={uiDensity}
           />
 
-          <div className="flex-1 flex overflow-hidden relative">
-            <Grid
-              data={sheet.data}
+	          <div className="flex-1 flex overflow-hidden relative" style={{ zIndex: 0 }}>
+	            <Grid
+	              data={sheet.data}
               activeCell={sheet.activeCell}
               selection={sheet.selection}
               editingCell={editingCell}
