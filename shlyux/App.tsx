@@ -13,6 +13,7 @@ import FindReplaceModal from './components/FindReplaceModal';
 import TemplatePickerModal from './components/TemplatePickerModal';
 import ShareModal from './components/ShareModal';
 import StatusBar from './components/StatusBar';
+import CommandPalette, { CommandPaletteItem } from './components/CommandPalette';
 import { API_BASE, AuthUser, fetchMe, getFile, getFileRealtimeToken, listFiles, login, register, saveFile, deleteFile, SheetFileMeta, convertExcel } from './utils/api';
 import { SheetState, ClipboardData, ContextMenuState, GridData, CellStyle, CellData } from './types';
 import { getCellId, getColumnLabel, recomputeSheet, NUM_COLS, NUM_ROWS, cellLabelToCoords } from './utils/spreadsheetUtils';
@@ -154,6 +155,7 @@ const App: React.FC = () => {
   const [findMatchCase, setFindMatchCase] = useState(false);
   const [findWholeCell, setFindWholeCell] = useState(false);
   const [findIndex, setFindIndex] = useState(-1);
+  const [commandOpen, setCommandOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [editingCell, setEditingCell] = useState<{ row: number, col: number } | null>(null);
   const [clipboard, setClipboard] = useState<ClipboardData | null>(null);
@@ -2192,6 +2194,11 @@ const App: React.FC = () => {
         handleSaveFile();
         return;
       }
+      if ((e.ctrlKey || e.metaKey) && keyLower === 'k') {
+        e.preventDefault();
+        setCommandOpen(true);
+        return;
+      }
       if ((e.ctrlKey || e.metaKey) && keyLower === 'f') {
         e.preventDefault();
         setFindMode('find');
@@ -2668,6 +2675,114 @@ const App: React.FC = () => {
     return `Range: ${range} (${rows}×${cols}, ${cells})`;
   })();
 
+  const paletteCommands = useMemo<CommandPaletteItem[]>(() => {
+    const isReadOnly = currentAccessRole === 'viewer';
+    const canShare = !!token && currentFileId !== null && currentAccessRole === 'owner';
+
+    const commands: CommandPaletteItem[] = [
+      {
+        id: 'file:new',
+        group: 'File',
+        label: 'New file',
+        run: handleNewFile,
+        keywords: 'create blank',
+      },
+      {
+        id: 'file:save',
+        group: 'File',
+        label: 'Save',
+        shortcut: 'Ctrl+S',
+        disabled: isReadOnly,
+        run: handleSaveFile,
+        keywords: 'write store',
+      },
+      {
+        id: 'file:templates',
+        group: 'File',
+        label: 'Templates',
+        shortcut: 'Ctrl+Shift+N',
+        disabled: isReadOnly,
+        run: () => setTemplatesOpen(true),
+        keywords: 'starter preset',
+      },
+      {
+        id: 'file:share',
+        group: 'File',
+        label: 'Share',
+        disabled: !canShare,
+        run: () => setShareOpen(true),
+        keywords: 'invite access',
+      },
+      {
+        id: 'edit:find',
+        group: 'Edit',
+        label: 'Find',
+        shortcut: 'Ctrl+F',
+        run: () => {
+          setFindMode('find');
+          setFindOpen(true);
+        },
+        keywords: 'search',
+      },
+      {
+        id: 'edit:replace',
+        group: 'Edit',
+        label: 'Replace',
+        shortcut: 'Ctrl+H',
+        run: () => {
+          if (!ensureWritable("almashtirish")) setFindMode('find');
+          else setFindMode('replace');
+          setFindOpen(true);
+        },
+        keywords: 'find replace',
+      },
+      {
+        id: 'view:autosave',
+        group: 'View',
+        label: autoSaveEnabled ? 'Disable Auto Save' : 'Enable Auto Save',
+        run: () => setAutoSaveEnabled((v) => !v),
+        keywords: 'save',
+      },
+      {
+        id: 'view:ai',
+        group: 'View',
+        label: isAiOpen ? 'Close AI' : 'Open AI',
+        run: () => setIsAiOpen((v) => !v),
+        keywords: 'assistant',
+      },
+      {
+        id: 'account:logout',
+        group: 'Account',
+        label: 'Logout',
+        disabled: !token,
+        run: handleLogout,
+        keywords: 'sign out',
+      },
+    ];
+
+    const fileCommands = (files || []).slice(0, 20).map((file) => ({
+      id: `files:open:${file.id}`,
+      group: 'Files',
+      label: `Open: ${file.name}`,
+      disabled: !token || file.id === currentFileId,
+      run: () => handleSelectFile(file.id),
+      keywords: 'open recent',
+    } satisfies CommandPaletteItem));
+
+    return [...commands, ...fileCommands];
+  }, [
+    autoSaveEnabled,
+    currentAccessRole,
+    currentFileId,
+    ensureWritable,
+    files,
+    handleLogout,
+    handleNewFile,
+    handleSaveFile,
+    handleSelectFile,
+    isAiOpen,
+    token,
+  ]);
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden" style={{ background: 'var(--bg-gradient)' }}>
@@ -2690,6 +2805,12 @@ const App: React.FC = () => {
         onExport={handleExport}
         onImportFile={currentAccessRole === 'viewer' ? undefined : handleImportFile}
         onShowProfile={() => setShowProfile(true)}
+      />
+
+      <CommandPalette
+        isOpen={commandOpen}
+        commands={paletteCommands}
+        onClose={() => setCommandOpen(false)}
       />
 
       <Profile
