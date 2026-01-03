@@ -788,6 +788,20 @@ const App: React.FC = () => {
 	    notify('success', 'Snapshot tiklandi');
 	  }, [ensureWritable, snapshots, saveState, notify]);
 
+	  const handleCreateAiSnapshot = useCallback((label: string) => {
+	    if (currentAccessRole === 'viewer') return;
+	    const id = typeof crypto?.randomUUID === 'function'
+	      ? crypto.randomUUID()
+	      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+	    const snapshot: SheetSnapshot = {
+	      id,
+	      label: (label || '').trim() || `AI — ${new Date().toLocaleString()}`,
+	      createdAt: Date.now(),
+	      state: safeCloneSheetState(latestSheetRef.current),
+	    };
+	    setSnapshots(addSnapshot(currentFileId, snapshot));
+	  }, [currentAccessRole, currentFileId]);
+
 	  const disconnectRealtimeNow = useCallback(() => {
 	    setRealtimeClient((prev) => {
 	      if (prev) prev.disconnect();
@@ -2718,6 +2732,120 @@ const App: React.FC = () => {
       }
     };
 
+    if (kind === 'copy_range' || kind === 'move_range') {
+      const isMove = kind === 'move_range';
+      if (!ensureWritable(isMove ? "AI ko'chirish" : 'AI copy')) return;
+
+      const startRow = toInt(action.startRow);
+      const endRow = toInt(action.endRow);
+      const startCol = toInt(action.startCol);
+      const endCol = toInt(action.endCol);
+      const targetRow = toInt(action.targetRow);
+      const targetCol = toInt(action.targetCol);
+      const mode = action.mode === 'overwrite' ? 'overwrite' : 'sparse';
+
+      if (
+        startRow === null || endRow === null || startCol === null || endCol === null
+        || targetRow === null || targetCol === null
+      ) {
+        notify('warning', `AI: ${kind} parametrlari noto‘g‘ri`);
+        return;
+      }
+
+      const maxRowLimit = Math.max(0, base.rowCount - 1);
+      const minR = Math.max(0, Math.min(startRow, endRow));
+      const maxR = Math.min(Math.max(startRow, endRow), maxRowLimit);
+      const minC = Math.max(0, Math.min(startCol, endCol));
+      const maxC = Math.min(Math.max(startCol, endCol), NUM_COLS - 1);
+
+      const dstR = Math.max(0, targetRow);
+      const dstC = Math.max(0, targetCol);
+
+      const height = maxR - minR + 1;
+      const width = maxC - minC + 1;
+
+      if (height <= 0 || width <= 0) {
+        notify('warning', `AI: ${kind} uchun range topilmadi`);
+        return;
+      }
+
+      if (dstC + width - 1 >= NUM_COLS) {
+        notify('warning', `AI: ${kind} — targetCol juda katta (NUM_COLS=${NUM_COLS})`);
+        return;
+      }
+
+      const estimatedCells = height * width;
+      if (estimatedCells > 2000) {
+        notify('warning', `AI: ${kind} juda katta (${estimatedCells} cells). Kichikroq range tanlang.`);
+        return;
+      }
+
+      const newData: GridData = { ...base.data };
+      const destIds = new Set<string>();
+
+      // Snapshot source cells from base to handle overlap safely.
+      type SrcCell = { rOff: number; cOff: number; cell: CellData | null };
+      const srcCells: SrcCell[] = [];
+      for (let r = 0; r < height; r++) {
+        for (let c = 0; c < width; c++) {
+          const srcRow = minR + r;
+          const srcCol = minC + c;
+          const id = getCellId(srcRow, srcCol);
+          const cell = base.data[id] ? { ...base.data[id] } : null;
+          if (mode === 'sparse') {
+            if (cell) srcCells.push({ rOff: r, cOff: c, cell });
+          } else {
+            srcCells.push({ rOff: r, cOff: c, cell });
+          }
+        }
+      }
+
+      srcCells.forEach(({ rOff, cOff, cell }) => {
+        const row = dstR + rOff;
+        const col = dstC + cOff;
+        const id = getCellId(row, col);
+        destIds.add(id);
+        if (cell) {
+          newData[id] = { ...cell };
+          return;
+        }
+        if (mode === 'overwrite' && newData[id]) {
+          newData[id] = { value: '', computed: '' };
+        }
+      });
+
+      if (isMove) {
+        for (let r = 0; r < height; r++) {
+          for (let c = 0; c < width; c++) {
+            const row = minR + r;
+            const col = minC + c;
+            const id = getCellId(row, col);
+            if (destIds.has(id)) continue;
+            if (newData[id]) {
+              newData[id] = { value: '', computed: '' };
+            }
+          }
+        }
+      }
+
+      const maxTargetRow = dstR + height - 1;
+      const rowCount = maxTargetRow >= 0 ? ensureRowCountForIndex(base.rowCount, maxTargetRow) : base.rowCount;
+      const nextSheet = {
+        ...base,
+        rowCount,
+        data: recomputeSheet(newData),
+        activeCell: { row: dstR, col: dstC },
+        selection: {
+          start: { row: dstR, col: dstC },
+          end: { row: Math.min(rowCount - 1, dstR + height - 1), col: Math.min(NUM_COLS - 1, dstC + width - 1) },
+        },
+      };
+      saveState(nextSheet);
+      broadcast(diffValues(base.data, newData));
+      notify('success', isMove ? "Ko'chirildi" : 'Copy qilindi', { duration: 1800 });
+      return;
+    }
+
     if (kind === 'clear_range') {
       if (!ensureWritable("AI tozalash")) return;
       const startRow = toInt(action.startRow);
@@ -3258,16 +3386,17 @@ const App: React.FC = () => {
                   </div>
                 }
               >
-                <GeminiSidebar
-                  isOpen={isAiOpen}
-                  onClose={() => setIsAiOpen(false)}
-                  authToken={token}
-                  sheetState={sheet}
-                  onApplyChanges={applyCellEdits}
-                  onApplyAiAction={applyAiAction}
-                />
-              </Suspense>
-            )}
+	                <GeminiSidebar
+	                  isOpen={isAiOpen}
+	                  onClose={() => setIsAiOpen(false)}
+	                  authToken={token}
+	                  sheetState={sheet}
+	                  onApplyChanges={applyCellEdits}
+	                  onApplyAiAction={applyAiAction}
+	                  onAutoSnapshot={handleCreateAiSnapshot}
+	                />
+	              </Suspense>
+	            )}
 
             <ContextMenu
               show={contextMenu.show}

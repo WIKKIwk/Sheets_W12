@@ -434,6 +434,8 @@ type ChatThread = {
 type AiCellEdit = { row: number; col: number; value: string };
 type AiAction =
   | { action: 'update_cells'; cells: AiCellEdit[]; message?: string }
+  | { action: 'copy_range'; startRow: number; endRow: number; startCol: number; endCol: number; targetRow: number; targetCol: number; mode?: 'sparse' | 'overwrite'; message?: string }
+  | { action: 'move_range'; startRow: number; endRow: number; startCol: number; endCol: number; targetRow: number; targetCol: number; mode?: 'sparse' | 'overwrite'; message?: string }
   | { action: 'clear_range'; startRow: number; endRow: number; startCol: number; endCol: number; message?: string }
   | { action: 'sort_range'; startRow: number; endRow: number; startCol: number; endCol: number; sortCol?: number; direction: 'asc' | 'desc'; hasHeader?: boolean; message?: string }
   | { action: 'delete_rows'; rows: number[]; message?: string }
@@ -551,10 +553,11 @@ interface GeminiSidebarProps {
   sheetState: SheetState;
   onApplyChanges: (edits: Array<{ row: number; col: number; value: string }>) => void;
   onApplyAiAction?: (action: AiAction) => void;
+  onAutoSnapshot?: (label: string) => void;
   authToken?: string | null;
 }
 
-const GeminiSidebar: React.FC<GeminiSidebarProps> = ({ isOpen, onClose, sheetState, onApplyChanges, onApplyAiAction, authToken }) => {
+const GeminiSidebar: React.FC<GeminiSidebarProps> = ({ isOpen, onClose, sheetState, onApplyChanges, onApplyAiAction, onAutoSnapshot, authToken }) => {
   const [input, setInput] = useState('');
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -915,6 +918,13 @@ const GeminiSidebar: React.FC<GeminiSidebarProps> = ({ isOpen, onClose, sheetSta
     appendUser(displayMsg);
     setLoading(true);
 
+    const snapshotLabel = (() => {
+      const raw = (userMsg || '').split('\n')[0]?.trim() || 'AI changes';
+      const cleaned = raw.replace(/\s+/g, ' ').trim();
+      const clipped = cleaned.length > 48 ? `${cleaned.slice(0, 48)}…` : cleaned;
+      return `AI — ${clipped || 'changes'}`;
+    })();
+
     // Create new AbortController for this request
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
@@ -989,6 +999,9 @@ const GeminiSidebar: React.FC<GeminiSidebarProps> = ({ isOpen, onClose, sheetSta
         ACTIONS (0-based row/col indices):
         1) Update specific cells:
            {"action":"update_cells","cells":[{"row":0,"col":0,"value":"Data"}],"message":"Done"}
+        1b) Copy/move a range (like copy/paste or cut/paste):
+           {"action":"copy_range","startRow":0,"endRow":10,"startCol":0,"endCol":2,"targetRow":20,"targetCol":0,"mode":"sparse","message":"Copied"}
+           {"action":"move_range","startRow":0,"endRow":10,"startCol":0,"endCol":2,"targetRow":20,"targetCol":0,"mode":"sparse","message":"Moved"}
         2) Clear a range:
            {"action":"clear_range","startRow":0,"endRow":10,"startCol":0,"endCol":5,"message":"Cleared"}
         3) Sort a range (rearrange, no rewrite):
@@ -1003,6 +1016,7 @@ const GeminiSidebar: React.FC<GeminiSidebarProps> = ({ isOpen, onClose, sheetSta
 
         CONSTRAINTS:
         - Keep "cells" <= 300. If more is needed, use sort/delete/clear actions or ask for a smaller selection.
+        - Keep copy/move ranges reasonably small (prefer <= 2000 cells). If bigger, ask user to select a smaller range.
       `;
 
       // Build parts array for multimodal content
@@ -1115,6 +1129,13 @@ const GeminiSidebar: React.FC<GeminiSidebarProps> = ({ isOpen, onClose, sheetSta
 
         const MAX_AI_EDITS = 300;
         const actionMessages: string[] = [];
+        let autoSnapshotDone = false;
+
+        const ensureSnapshot = () => {
+          if (autoSnapshotDone) return;
+          autoSnapshotDone = true;
+          onAutoSnapshot?.(snapshotLabel);
+        };
 
         for (const action of envelope.actions) {
           if (!abortControllerRef.current) return;
@@ -1135,6 +1156,7 @@ const GeminiSidebar: React.FC<GeminiSidebarProps> = ({ isOpen, onClose, sheetSta
             }
 
             if (edits.length > 0) {
+              ensureSnapshot();
               onApplyChanges(edits);
             }
             if (typeof (action as any).message === 'string' && (action as any).message.trim()) {
@@ -1151,6 +1173,7 @@ const GeminiSidebar: React.FC<GeminiSidebarProps> = ({ isOpen, onClose, sheetSta
           }
 
           if (onApplyAiAction) {
+            ensureSnapshot();
             onApplyAiAction(action);
             if (typeof (action as any).message === 'string' && (action as any).message.trim()) {
               actionMessages.push((action as any).message.trim());
