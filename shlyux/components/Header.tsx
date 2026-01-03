@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, Save, FolderOpen, FilePlus, User, LogOut, Download, Terminal, Code2, Key, Copy, Check, Trash2, Edit3, Settings, LayoutTemplate, Share2 } from 'lucide-react';
-import { generateApiKey } from '../utils/api';
+import { FileText, Save, FolderOpen, FilePlus, LogOut, Download, Trash2, Edit3, Settings, LayoutTemplate, Share2 } from 'lucide-react';
 import { usePresence } from '../utils/usePresence';
 import Tooltip from './Tooltip';
 
@@ -10,8 +9,6 @@ interface HeaderProps {
     currentAccessRole?: 'owner' | 'editor' | 'viewer' | null;
     user: any;
     files: any[];
-    apiBase: string;
-    authToken: string | null;
     onFileNameChange: (name: string) => void;
     onNewFile: () => void;
     onOpenTemplates?: () => void;
@@ -31,8 +28,6 @@ const Header: React.FC<HeaderProps> = ({
     currentAccessRole,
     user,
     files,
-    apiBase,
-    authToken,
     onFileNameChange,
     onNewFile,
     onOpenTemplates,
@@ -49,91 +44,17 @@ const Header: React.FC<HeaderProps> = ({
     const [editValue, setEditValue] = useState(fileName);
     const [filesOpen, setFilesOpen] = useState(false);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
-    const [devOpen, setDevOpen] = useState(false);
-    const [generatedSnippet, setGeneratedSnippet] = useState<string | null>(null);
-    const [copyStatus, setCopyStatus] = useState<string | null>(null);
-    const [apiKey, setApiKey] = useState<string | null>(null);
-    const [apiKeyStatus, setApiKeyStatus] = useState<string | null>(null);
 
     const isOwner = (currentAccessRole || 'owner') === 'owner';
     const isViewer = currentAccessRole === 'viewer';
 
     const filesPresence = usePresence(filesOpen, { exitDurationMs: 240 });
-    const devPresence = usePresence(devOpen, { exitDurationMs: 240 });
     const userMenuPresence = usePresence(userMenuOpen, { exitDurationMs: 240 });
 
     const handleSaveName = () => {
         onFileNameChange(editValue);
         setIsEditing(false);
     };
-
-    const apiBaseV1 = `${apiBase}/api/v1`;
-    const fileIdForSnippet = currentFileId ? `${currentFileId}` : ':id';
-    const apiKeyHeader = apiKey ? `-H "X-API-Key: ${apiKey}"` : `-H "X-API-Key: YOUR_API_KEY"`;
-    const placeholderSnippet = `curl ${apiKeyHeader} ${apiBaseV1}/files`;
-
-    const setSnippet = (snippet: string) => {
-        setGeneratedSnippet(snippet);
-        setCopyStatus(null);
-    };
-
-    const handleGenerateApiSnippet = () => {
-        setSnippet(placeholderSnippet);
-    };
-
-    const copyText = (text: string) => {
-        navigator.clipboard?.writeText(text)
-            .then(() => setCopyStatus("Nusxa olindi"))
-            .catch(() => setCopyStatus("Nusxa olishda xato"));
-    };
-
-    const handleCopyPlaceholder = () => {
-        if (!generatedSnippet) return;
-        copyText(generatedSnippet);
-    };
-
-    const handleCopyWithApiKey = () => {
-        if (!apiKey) {
-            setCopyStatus("API key yo'q, avval yaratib oling");
-            return;
-        }
-        copyText(`curl -H "X-API-Key: ${apiKey}" ${apiBaseV1}/files`);
-    };
-
-    const handleCopyApiKeyOnly = () => {
-        if (!apiKey) {
-            setCopyStatus("API key yo'q, avval yaratib oling");
-            return;
-        }
-        copyText(apiKey);
-    };
-
-    const handleGenerateApiKeyClick = async () => {
-        if (!authToken) {
-            setApiKeyStatus("Token yo'q, login qiling");
-            return;
-        }
-        setApiKeyStatus("Yaratilmoqda...");
-        try {
-            const res = await generateApiKey(authToken);
-            setApiKey(res.api_key);
-            setApiKeyStatus("Yaratildi");
-            // refresh snippet to use new key
-            setSnippet(`curl -H "X-API-Key: ${res.api_key}" ${apiBaseV1}/files`);
-        } catch (err) {
-            const msg = err instanceof Error ? err.message : 'API key yaratilmadi';
-            setApiKeyStatus(msg);
-        }
-    };
-
-    const handleSnippetListFiles = () => setSnippet(`curl ${apiKeyHeader} ${apiBaseV1}/files`);
-    const handleSnippetGetFile = () => setSnippet(`curl ${apiKeyHeader} ${apiBaseV1}/files/${fileIdForSnippet}`);
-    const handleSnippetSchema = () => setSnippet(`curl ${apiKeyHeader} ${apiBaseV1}/files/${fileIdForSnippet}/schema`);
-    const handleSnippetRange = () => setSnippet(`curl ${apiKeyHeader} "${apiBaseV1}/files/${fileIdForSnippet}/cells?range=A1:D20&format=grid"`);
-    const handleSnippetPatch = () => setSnippet(
-        `curl -X PATCH ${apiKeyHeader} -H "Content-Type: application/json" -d '{"edits":[{"cell":"A2","value":"Hello"}]}' ${apiBaseV1}/files/${fileIdForSnippet}/cells`
-    );
-    const handleSnippetRealtimeToken = () => setSnippet(`curl -X POST ${apiKeyHeader} ${apiBaseV1}/realtime/token`);
 
     return (
         <div className="modern-header">
@@ -369,167 +290,6 @@ const Header: React.FC<HeaderProps> = ({
                                                         </div>
                                                     );
                                                 })
-                                            )}
-                                        </div>
-                                    </div>
-                                </>
-                            )}
-                        </div>
-
-                        <div className="relative">
-                            <button
-                                onClick={() => setDevOpen(!devOpen)}
-                                className="action-btn"
-                                title="Developer API"
-                            >
-                                <Terminal size={14} />
-                                <span>Dev</span>
-                            </button>
-
-                            {devPresence.isMounted && (
-                                <>
-                                    <div
-                                        className="dropdown-overlay ui-overlay"
-                                        data-state={devPresence.state}
-                                        onClick={() => setDevOpen(false)}
-                                    />
-                                    <div
-                                        className="dropdown dev-dropdown ui-popover"
-                                        data-state={devPresence.state}
-                                        style={{ minWidth: 420, maxWidth: 520 }}
-                                    >
-                                        <div className="dev-dropdown-header">
-                                            <Code2 size={20} />
-                                            <span>API olish</span>
-                                        </div>
-
-                                        <div className="dev-section">
-                                            <div className="dev-info-row">
-                                                <span className="dev-label">Base URL:</span>
-                                                <code className="dev-value">{apiBaseV1}</code>
-                                            </div>
-                                            <div className="dev-info-row">
-                                                <span className="dev-label">File ID:</span>
-                                                <code className="dev-value">{currentFileId ?? '—'}</code>
-                                            </div>
-                                            <div className="dev-info-row">
-                                                <span className="dev-label">Auth:</span>
-                                                <span className="dev-value">Bearer JWT (login/register orqali)</span>
-                                            </div>
-                                        </div>
-
-                                        <div className="dev-divider" />
-
-                                        <div className="dev-section">
-                                            <div className="dev-subsection-header">
-                                                <Key size={16} />
-                                                <span>API Key</span>
-                                            </div>
-
-                                            <div className="api-key-display">
-                                                {apiKey ? (
-                                                    <>
-                                                        <code className="api-key-text">
-                                                            {apiKey.slice(0, 8)}...{apiKey.slice(-8)}
-                                                        </code>
-                                                        <button
-                                                            className="icon-copy-btn"
-                                                            onClick={handleCopyApiKeyOnly}
-                                                            title="Copy API Key"
-                                                        >
-                                                            {copyStatus === "Nusxa olindi" ? <Check size={14} /> : <Copy size={14} />}
-                                                        </button>
-                                                    </>
-                                                ) : (
-                                                    <span className="dev-placeholder">Yaratilmagan</span>
-                                                )}
-                                            </div>
-
-                                            <button
-                                                className="dev-action-btn"
-                                                onClick={handleGenerateApiKeyClick}
-                                            >
-                                                <Key size={16} />
-                                                API key yaratish
-                                            </button>
-
-                                            {apiKeyStatus && (
-                                                <div className="dev-status">{apiKeyStatus}</div>
-                                            )}
-                                        </div>
-
-                                        <div className="dev-divider" />
-
-                                        <div className="dev-section">
-                                            <div className="snippet-actions" style={{ flexWrap: 'wrap' }}>
-                                                <button className="snippet-action-btn" onClick={handleSnippetListFiles}>
-                                                    <Terminal size={14} />
-                                                    files
-                                                </button>
-                                                <button className="snippet-action-btn" onClick={handleSnippetGetFile} disabled={!currentFileId}>
-                                                    <Terminal size={14} />
-                                                    file
-                                                </button>
-                                                <button className="snippet-action-btn" onClick={handleSnippetSchema} disabled={!currentFileId}>
-                                                    <Terminal size={14} />
-                                                    schema
-                                                </button>
-                                                <button className="snippet-action-btn" onClick={handleSnippetRange} disabled={!currentFileId}>
-                                                    <Terminal size={14} />
-                                                    range
-                                                </button>
-                                                <button className="snippet-action-btn" onClick={handleSnippetPatch} disabled={!currentFileId || isViewer}>
-                                                    <Terminal size={14} />
-                                                    patch
-                                                </button>
-                                                <button className="snippet-action-btn" onClick={handleSnippetRealtimeToken}>
-                                                    <Terminal size={14} />
-                                                    realtime
-                                                </button>
-                                            </div>
-
-                                            <button
-                                                className="dev-action-btn primary"
-                                                onClick={handleGenerateApiSnippet}
-                                            >
-                                                <Code2 size={16} />
-                                                cURL yaratish
-                                            </button>
-
-                                            {generatedSnippet && (
-                                                <div className="code-snippet-container">
-                                                    <div className="code-snippet-header">
-                                                        <Terminal size={14} />
-                                                        <span>cURL Command</span>
-                                                    </div>
-                                                    <div className="code-snippet">
-                                                        <code>{generatedSnippet}</code>
-                                                        <button
-                                                            className="snippet-copy-btn"
-                                                            onClick={handleCopyPlaceholder}
-                                                            title="Copy to clipboard"
-                                                        >
-                                                            {copyStatus === "Nusxa olindi" ? <Check size={14} /> : <Copy size={14} />}
-                                                        </button>
-                                                    </div>
-
-                                                    <div className="snippet-actions">
-                                                        <button
-                                                            className="snippet-action-btn"
-                                                            onClick={handleCopyWithApiKey}
-                                                        >
-                                                            <Copy size={14} />
-                                                            Nusxa (mening API key)
-                                                        </button>
-                                                    </div>
-
-                                                    {copyStatus && (
-                                                        <div className="copy-feedback">
-                                                            <Check size={14} />
-                                                            {copyStatus}
-                                                        </div>
-                                                    )}
-                                                </div>
                                             )}
                                         </div>
                                     </div>

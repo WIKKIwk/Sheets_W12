@@ -2788,16 +2788,14 @@ const App: React.FC = () => {
     <div className="flex flex-col h-screen w-screen overflow-hidden" style={{ background: 'var(--bg-gradient)' }}>
       <Header
         fileName={fileName}
-        currentFileId={currentFileId}
-        currentAccessRole={currentAccessRole}
-        user={user}
-        files={files}
-        apiBase={API_BASE}
-        authToken={token}
-        onFileNameChange={setFileName}
-        onNewFile={handleNewFile}
-        onOpenTemplates={currentAccessRole === 'viewer' ? undefined : () => setTemplatesOpen(true)}
-        onSaveFile={handleSaveFile}
+	        currentFileId={currentFileId}
+	        currentAccessRole={currentAccessRole}
+	        user={user}
+	        files={files}
+	        onFileNameChange={setFileName}
+	        onNewFile={handleNewFile}
+	        onOpenTemplates={currentAccessRole === 'viewer' ? undefined : () => setTemplatesOpen(true)}
+	        onSaveFile={handleSaveFile}
         onShareFile={() => setShareOpen(true)}
         onOpenFile={handleSelectFile}
         onDeleteFile={handleDeleteFile}
