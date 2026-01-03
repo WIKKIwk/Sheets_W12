@@ -63,6 +63,31 @@ const isNumericLike = (value: string): boolean => {
   return /^-?\d+(\.\d+)?$/.test(trimmed);
 };
 
+const extractSearchTerms = (userText: string): string[] => {
+  const raw = (userText || '')
+    .replace(/(^|[^A-Z0-9])([A-Z]{1,3}[0-9]{1,7})\s*:\s*([A-Z]{1,3}[0-9]{1,7})(?=[^A-Z0-9]|$)/gi, ' ')
+    .replace(/(^|[^A-Z0-9])([A-Z]{1,3}[0-9]{1,7})(?=[^A-Z0-9]|$)/gi, ' ')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim()
+    .toLowerCase();
+
+  const stop = new Set([
+    'va', 'yoki', 'ham', 'barcha', 'hammasi', 'shu', 'bu', 'mana', 'qani',
+    'o', 'ochir', "o'chir", "o'chirib", 'tashla', 'olib', 'qoy', "qo'y", "qo'ying", 'qil', 'qilib', 'ber',
+    'katak', 'katakka', 'qator', 'qatorni', 'ustun', 'ustunni', 'range', 'cell', 'rows', 'cols',
+    'kategoriyasi', 'kategoriyasini', 'kategoriya', 'category', 'delete', 'remove', 'clear', 'sort', 'copy', 'move',
+  ]);
+
+  const terms = raw
+    .split(/\s+/g)
+    .map((t) => t.trim())
+    .filter((t) => t.length >= 2)
+    .filter((t) => !stop.has(t))
+    .slice(0, 6);
+
+  return Array.from(new Set(terms)).slice(0, 6);
+};
+
 const formatCellLine = (row: number, col: number, cell: any): string => {
   const label = `${getColumnLabel(col)}${row + 1}`;
   const raw = (cell?.value ?? '').toString().replace(/\s+/g, ' ').trim();
@@ -147,6 +172,38 @@ const buildAiSheetContext = (sheetState: SheetState, userText?: string): {
   refs.ranges.forEach((r) => {
     ranges.push({ ...r, reason: 'explicit_range' });
   });
+
+  const searchTerms = userText ? extractSearchTerms(userText) : [];
+  const keywordHits: Array<{ id: string; row: number; col: number }> = [];
+  if (searchTerms.length) {
+    const seenHits = new Set<string>();
+    for (const id of nonEmptyIds) {
+      if (keywordHits.length >= 80) break;
+      const cell = (sheetState.data as any)[id];
+      const display = normalizeKey(getCellDisplayString(cell));
+      if (!display) continue;
+      for (const term of searchTerms) {
+        if (display.includes(term)) {
+          if (seenHits.has(id)) break;
+          const { row, col } = getCellIdParts(id);
+          if (!Number.isFinite(row) || !Number.isFinite(col)) break;
+          keywordHits.push({ id, row, col });
+          seenHits.add(id);
+          break;
+        }
+      }
+    }
+  }
+
+  if (used && keywordHits.length) {
+    const maxRowLimit = Math.max(0, (sheetState.rowCount || 1) - 1);
+    const uniqueHitRows = Array.from(new Set(keywordHits.map((h) => h.row))).slice(0, 6);
+    uniqueHitRows.forEach((row) => {
+      const minRow = clamp(row - 2, 0, maxRowLimit);
+      const maxRow = clamp(row + 24, 0, maxRowLimit);
+      ranges.push({ minRow, maxRow, minCol: used.minCol, maxCol: used.maxCol, reason: 'keyword_hit' });
+    });
+  }
 
   let selectionBounds: SheetBounds | null = null;
   let selectionA1: string | null = null;
@@ -248,6 +305,17 @@ const buildAiSheetContext = (sheetState: SheetState, userText?: string): {
     const cell = (sheetState.data as any)[id];
     const line = formatMaybeEmptyCellLine(coord.row, coord.col, cell);
     if (!pushLine(line, id)) break;
+  }
+
+  // Include keyword hits early so mid-sheet matches ("RAM", "Apple", etc.) are visible to the model.
+  if (!truncated && keywordHits.length) {
+    for (const hit of keywordHits.slice(0, 28)) {
+      if (truncated) break;
+      if (seen.has(hit.id)) continue;
+      const cell = (sheetState.data as any)[hit.id];
+      const line = formatCellLine(hit.row, hit.col, cell);
+      if (!pushLine(line, hit.id)) break;
+    }
   }
 
   // Always include header row cells early (non-empty) so the assistant can locate columns like "Category".
