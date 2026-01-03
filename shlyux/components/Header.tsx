@@ -231,7 +231,7 @@ const Header: React.FC<HeaderProps> = ({
                             onClick={onSaveFile}
                             disabled={isViewer}
                             className={`action-btn primary btn-lift ${isViewer ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            title={isViewer ? "Read-only: Save mumkin emas" : "Save"}
+                            title={isViewer ? "Read-only: Save mumkin emas" : "Save (Ctrl+S)"}
                         >
                             <Save size={14} />
                             <span>Save</span>

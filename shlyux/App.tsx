@@ -8,7 +8,7 @@ import Header from './components/Header';
 import Profile from './components/Profile';
 import DeleteConfirmModal from './components/DeleteConfirmModal';
 import OverwriteConfirmModal from './components/OverwriteConfirmModal';
-import ErrorToast from './components/ErrorToast';
+import Toast, { ToastState, ToastTone } from './components/Toast';
 import FindReplaceModal from './components/FindReplaceModal';
 import TemplatePickerModal from './components/TemplatePickerModal';
 import ShareModal from './components/ShareModal';
@@ -178,7 +178,7 @@ const App: React.FC = () => {
   const [realtimeClient, setRealtimeClient] = useState<RealtimeClient | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
   const [overwriteConfirm, setOverwriteConfirm] = useState<{ show: boolean; action: (() => void) | null }>({ show: false, action: null });
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [toast, setToast] = useState<ToastState | null>(null);
   const remoteQueue = useRef<Record<string, string>>({});
   const [showProfile, setShowProfile] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -191,11 +191,15 @@ const App: React.FC = () => {
   const saveSeqRef = useRef(0);
   const [realtimeStatus, setRealtimeStatus] = useState<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected');
 
+  const notify = useCallback((tone: ToastTone, message: string, opts?: { title?: string; duration?: number }) => {
+    setToast({ tone, message, title: opts?.title, duration: opts?.duration });
+  }, []);
+
   const ensureWritable = useCallback((actionLabel?: string) => {
     if (currentAccessRole !== 'viewer') return true;
-    setErrorMessage(actionLabel ? `Read-only: ${actionLabel} mumkin emas` : "Read-only: tahrirlash mumkin emas");
+    notify('warning', actionLabel ? `Read-only: ${actionLabel} mumkin emas` : "Read-only: tahrirlash mumkin emas");
     return false;
-  }, [currentAccessRole]);
+  }, [currentAccessRole, notify]);
 
   // Initialize theme and font from localStorage on mount
   useEffect(() => {
@@ -275,11 +279,11 @@ const App: React.FC = () => {
         }
         // Only show error if it's the last active save request
         if (activeSaveRequests.current.size === 0) {
-          setErrorMessage(`Avtomatik saqlashda xato: ${err instanceof Error ? err.message : 'Noma\'lum xato'}`);
+          notify('warning', `Avtomatik saqlashda xato: ${err instanceof Error ? err.message : 'Noma\'lum xato'}`);
         }
       }
     })();
-  }, [token, fileName, currentFileId, autoSaveEnabled, currentAccessRole]);
+  }, [token, fileName, currentFileId, autoSaveEnabled, currentAccessRole, notify]);
 
   // Periodic auto save every 1 minute - use ref to get latest sheet
   const latestSheetRef = useRef(sheet);
@@ -363,15 +367,15 @@ const App: React.FC = () => {
     if (!normalized) return;
     const coords = cellLabelToCoords(normalized);
     if (!coords) {
-      setErrorMessage("Katak manzili noto'g'ri. Masalan: A1");
+      notify('warning', "Katak manzili noto'g'ri. Masalan: A1");
       return;
     }
     if (coords.col < 0 || coords.col >= NUM_COLS) {
-      setErrorMessage(`Ustun chegaradan tashqarida. Max: ${getColumnLabel(NUM_COLS - 1)}`);
+      notify('warning', `Ustun chegaradan tashqarida. Max: ${getColumnLabel(NUM_COLS - 1)}`);
       return;
     }
     goToCell(coords.row, coords.col);
-  }, [goToCell]);
+  }, [goToCell, notify]);
 
   const goToMatchIndex = useCallback((idx: number) => {
     const match = findMatches[idx];
@@ -447,7 +451,7 @@ const App: React.FC = () => {
         }
       } catch (err) {
         console.error('Periodic auto save error:', err);
-        setErrorMessage(`Auto save xato: ${err instanceof Error ? err.message : 'Noma\'lum xato'}`);
+        notify('warning', `Auto save xato: ${err instanceof Error ? err.message : 'Noma\'lum xato'}`);
       }
     }, 60000); // 1 minute = 60000ms
 
@@ -455,7 +459,7 @@ const App: React.FC = () => {
       console.log('Periodic auto save interval cleared');
       clearInterval(interval);
     };
-  }, [autoSaveEnabled, token, fileName, currentFileId, currentAccessRole]);
+  }, [autoSaveEnabled, token, fileName, currentFileId, currentAccessRole, notify]);
 
   const flushRemoteEdits = useCallback(() => {
     const pending = remoteQueue.current;
@@ -561,7 +565,7 @@ const App: React.FC = () => {
         if (!cancelled) setFiles(list);
       } catch (err) {
         if (!cancelled) {
-          setErrorMessage(`Tokenni tekshirishda xato: ${err instanceof Error ? err.message : 'Noma\'lum xato'}`);
+          notify('danger', `Tokenni tekshirishda xato: ${err instanceof Error ? err.message : 'Noma\'lum xato'}`);
           setUser(null);
           setToken(null);
           setFiles([]);
@@ -572,7 +576,7 @@ const App: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, notify]);
 
   // Connect to realtime channel when a saved file is open
   useEffect(() => {
@@ -620,7 +624,7 @@ const App: React.FC = () => {
               setRealtimeStatus('disconnected');
             },
             onError: (reason) => {
-              setErrorMessage(`Realtime ulanishda xato: ${reason || 'Noma\'lum xato'}`);
+              notify('danger', `Realtime ulanishda xato: ${reason || 'Noma\'lum xato'}`);
               setRealtimeStatus('error');
             }
           }
@@ -634,7 +638,7 @@ const App: React.FC = () => {
         setRealtimeClient(rt);
       } catch (err) {
         if (!cancelled) {
-          setErrorMessage(`Realtime token olishda xato: ${err instanceof Error ? err.message : 'Noma\'lum xato'}`);
+          notify('danger', `Realtime token olishda xato: ${err instanceof Error ? err.message : 'Noma\'lum xato'}`);
           setRealtimeStatus('error');
         }
       }
@@ -649,7 +653,7 @@ const App: React.FC = () => {
       cancelRemoteQueue();
       setRealtimeStatus('disconnected');
     };
-  }, [token, user, currentFileId]);
+  }, [token, user, currentFileId, notify]);
 
   // Sync formula bar with active cell
   useEffect(() => {
@@ -768,13 +772,11 @@ const App: React.FC = () => {
   const handleSaveFile = useCallback(async () => {
     if (!ensureWritable('saqlash')) return;
     if (!token) {
-      // setFileError(true); // This variable is not defined in the original code, removing.
-      // setFileMessage('Token topilmadi. Avval kirish qiling.'); // This variable is not defined in the original code, removing.
+      notify('warning', 'Token topilmadi. Avval kirish qiling.');
       return;
     }
     if (!fileName) {
-      // setFileError(true); // This variable is not defined in the original code, removing.
-      // setFileMessage('Fayl nomi kerak.'); // This variable is not defined in the original code, removing.
+      notify('warning', 'Fayl nomi kerak.');
       return;
     }
 
@@ -792,19 +794,19 @@ const App: React.FC = () => {
       if (seq === saveSeqRef.current) {
         setSaveStatus('saved');
         setLastSavedAt(Date.now());
+        notify('success', 'Saqlandi', { duration: 2200 });
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Saqlashda xato';
       // setFileError(true); // This variable is not defined in the original code, removing.
       // setFileMessage(msg); // This variable is not defined in the original code, removing.
-      setErrorMessage(`Saqlashda xato: ${err instanceof Error ? err.message : 'Noma\'lum xato'}`);
+      notify('danger', `Saqlashda xato: ${err instanceof Error ? err.message : 'Noma\'lum xato'}`);
       if (seq === saveSeqRef.current) {
         setSaveStatus('error');
       }
     } finally {
       // setSavingFile(false); // This variable is not defined in the original code, removing.
     }
-  }, [token, fileName, currentFileId, sheet, ensureWritable]);
+  }, [token, fileName, currentFileId, sheet, ensureWritable, notify]);
 
   const handleSelectFile = useCallback(async (id: number) => {
     if (!token) return;
@@ -824,9 +826,9 @@ const App: React.FC = () => {
       setSaveStatus('idle');
       setLastSavedAt(null);
     } catch (err) {
-      setErrorMessage(`Faylni yuklashda xato: ${err instanceof Error ? err.message : 'Noma\'lum xato'}`);
+      notify('danger', `Faylni yuklashda xato: ${err instanceof Error ? err.message : 'Noma\'lum xato'}`);
     }
-  }, [token, resetHistory]);
+  }, [token, resetHistory, notify]);
 
   const handleDeleteFile = useCallback((id: number) => {
     setPendingDeleteId(id);
@@ -842,12 +844,12 @@ const App: React.FC = () => {
         handleNewFile();
       }
     } catch (err) {
-      setErrorMessage(`Faylni o'chirishda xato: ${err instanceof Error ? err.message : 'Noma\'lum xato'}`);
+      notify('danger', `Faylni o'chirishda xato: ${err instanceof Error ? err.message : 'Noma\'lum xato'}`);
       alert('Faylni o\'chirishda xato: ' + (err instanceof Error ? err.message : 'Unknown error'));
     } finally {
       setPendingDeleteId(null);
     }
-  }, [token, pendingDeleteId, currentFileId, handleNewFile]);
+  }, [token, pendingDeleteId, currentFileId, handleNewFile, notify]);
 
   const updateCell = useCallback((row: number, col: number, value: string, opts?: { broadcast?: boolean }) => {
     if (!ensureWritable()) return;
@@ -892,7 +894,7 @@ const App: React.FC = () => {
     const needle = findQuery.trim();
     if (!needle) return;
     if (findMatches.length === 0) {
-      setErrorMessage('Topilmadi');
+      notify('info', 'Topilmadi');
       return;
     }
 
@@ -910,7 +912,7 @@ const App: React.FC = () => {
     });
 
     if (editsToSend.length === 0) {
-      setErrorMessage('Hech qanday o‘zgarish bo‘lmadi');
+      notify('info', 'Hech qanday o‘zgarish bo‘lmadi');
       return;
     }
 
@@ -926,13 +928,13 @@ const App: React.FC = () => {
       }
     }
 
-    setErrorMessage(`${editsToSend.length} ta katak almashtirildi`);
-  }, [findQuery, findReplaceText, findMatches, replaceAllInString, sheet, saveState, realtimeClient, ensureWritable]);
+    notify('success', `${editsToSend.length} ta katak almashtirildi`);
+  }, [findQuery, findReplaceText, findMatches, replaceAllInString, sheet, saveState, realtimeClient, ensureWritable, notify]);
 
   const startEditing = useCallback((row: number, col: number, initialValue?: string) => {
     if (currentAccessRole === 'viewer') {
       if (initialValue !== undefined) {
-        setErrorMessage("Read-only: tahrirlash mumkin emas");
+        notify('warning', "Read-only: tahrirlash mumkin emas");
       }
       return;
     }
@@ -945,7 +947,7 @@ const App: React.FC = () => {
       activeCell: { row, col },
       selection: { start: { row, col }, end: { row, col } }
     }));
-  }, [sheet.data, currentAccessRole]);
+  }, [sheet.data, currentAccessRole, notify]);
 
   const commitEditing = useCallback((row: number, col: number, move?: { rowDelta?: number; colDelta?: number }) => {
     if (currentAccessRole === 'viewer') {
@@ -1030,7 +1032,7 @@ const App: React.FC = () => {
   const sortSelectionByColumn = useCallback((direction: 'asc' | 'desc') => {
     if (!ensureWritable('sort')) return;
     if (!sheet.selection) {
-      setErrorMessage('Avval range tanlang (selection).');
+      notify('warning', 'Avval range tanlang (selection).');
       return;
     }
 
@@ -1041,7 +1043,7 @@ const App: React.FC = () => {
     const maxC = Math.max(start.col, end.col);
 
     if (minR === maxR) {
-      setErrorMessage('Sort uchun kamida 2 qator tanlang.');
+      notify('warning', 'Sort uchun kamida 2 qator tanlang.');
       return;
     }
 
@@ -1126,8 +1128,8 @@ const App: React.FC = () => {
       }
     }
 
-    setErrorMessage(direction === 'asc' ? 'Sort: A → Z' : 'Sort: Z → A');
-  }, [sheet, contextMenu.col, saveState, realtimeClient, ensureWritable]);
+    notify('info', direction === 'asc' ? 'Sort: A → Z' : 'Sort: Z → A');
+  }, [sheet, contextMenu.col, saveState, realtimeClient, ensureWritable, notify]);
 
   const handleSortAsc = useCallback(() => sortSelectionByColumn('asc'), [sortSelectionByColumn]);
   const handleSortDesc = useCallback(() => sortSelectionByColumn('desc'), [sortSelectionByColumn]);
@@ -1222,7 +1224,7 @@ const App: React.FC = () => {
                 applyImportedRows(rows, baseName || fileName);
               } catch (err) {
                 console.error('Excel import error:', err);
-                setErrorMessage('Excel import server mavjud emas. Faqat CSV fayllarni import qilish mumkin.');
+                notify('warning', 'Excel import server mavjud emas. Faqat CSV fayllarni import qilish mumkin.');
               }
               return;
             } else if (fileType === 'text/csv' || fileType.startsWith('text/')) {
@@ -1242,7 +1244,7 @@ const App: React.FC = () => {
 
                 if (looksLikeFilePath(text)) {
                   console.log('Detected file path, triggering file selector');
-                  setErrorMessage('Faylni tanlash uchun Import tugmasini bosing yoki faylni shu yerga sudrab olib keling (drag & drop).');
+                  notify('info', 'Faylni tanlash uchun Import tugmasini bosing yoki faylni shu yerga sudrab olib keling (drag & drop).');
                   // Trigger file input click to allow user to select the file
                   const fileInput = document.getElementById('file-input') as HTMLInputElement;
                   if (fileInput) {
@@ -1345,7 +1347,7 @@ const App: React.FC = () => {
 
         if (looksLikeFilePath(clipboardText)) {
           console.log('Detected file path in readText(), triggering file selector');
-          setErrorMessage('Faylni tanlash uchun Import tugmasini bosing yoki faylni shu yerga sudrab olib keling (drag & drop).');
+          notify('info', 'Faylni tanlash uchun Import tugmasini bosing yoki faylni shu yerga sudrab olib keling (drag & drop).');
           // Trigger file input click to allow user to select the file
           const fileInput = document.getElementById('file-input') as HTMLInputElement;
           if (fileInput) {
@@ -1502,7 +1504,7 @@ const App: React.FC = () => {
     } else {
       performPaste();
     }
-  }, [clipboard, sheet, saveState, realtimeClient, token, fileName, applyImportedRows, ensureWritable]);
+  }, [clipboard, sheet, saveState, realtimeClient, token, fileName, applyImportedRows, ensureWritable, notify]);
 
   const handleDelete = useCallback(() => {
     if (!ensureWritable("o'chirish")) return;
@@ -1648,7 +1650,7 @@ const App: React.FC = () => {
     // Apply format painter if active
     if (formatPainterActive && copiedFormat.current) {
       if (currentAccessRole === 'viewer') {
-        setErrorMessage("Read-only: format qo'llash mumkin emas");
+        notify('warning', "Read-only: format qo'llash mumkin emas");
         setFormatPainterActive(false);
         copiedFormat.current = null;
       } else {
@@ -2097,7 +2099,7 @@ const App: React.FC = () => {
     if (!ensureWritable('import')) return;
     try {
       console.log('Import started:', file.name, file.type);
-      setErrorMessage(null);
+      setToast(null);
 
       // Check file type
       const ext = file.name.split('.').pop()?.toLowerCase();
@@ -2128,17 +2130,17 @@ const App: React.FC = () => {
           applyImportedRows(rows, baseName || fileName);
         } catch (backendErr) {
           console.error('Excel import error:', backendErr);
-          setErrorMessage('Excel import server mavjud emas. Faqat CSV fayllarni import qilish mumkin.');
+          notify('warning', 'Excel import server mavjud emas. Faqat CSV fayllarni import qilish mumkin.');
         }
       } else {
-        setErrorMessage('Faqat CSV, XLS, XLSX fayllar qo\'llab-quvvatlanadi');
+        notify('warning', 'Faqat CSV, XLS, XLSX fayllar qo\'llab-quvvatlanadi');
       }
     } catch (err) {
       console.error('Import error:', err);
       const msg = err instanceof Error ? err.message : 'Import failed';
-      setErrorMessage(`Import xatosi: ${msg}`);
+      notify('danger', `Import xatosi: ${msg}`);
     }
-  }, [token, applyImportedRows, fileName, ensureWritable]);
+  }, [token, applyImportedRows, fileName, ensureWritable, notify]);
 
   // Keyboard Navigation
   useEffect(() => {
@@ -2153,6 +2155,11 @@ const App: React.FC = () => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
         e.preventDefault();
         redo();
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && keyLower === 's') {
+        e.preventDefault();
+        handleSaveFile();
         return;
       }
       if ((e.ctrlKey || e.metaKey) && keyLower === 'f') {
@@ -2252,7 +2259,7 @@ const App: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [sheet.activeCell, undo, redo, startEditing, handleCopy, handleCut, handlePaste, handleDelete, ensureWritable]);
+  }, [sheet.activeCell, undo, redo, handleSaveFile, startEditing, handleCopy, handleCut, handlePaste, handleDelete, ensureWritable]);
 
   // Handle paste event to capture files from clipboard (e.g., when copying files from file manager)
   useEffect(() => {
@@ -2268,14 +2275,14 @@ const App: React.FC = () => {
         if (ext === 'csv' || ext === 'xlsx' || ext === 'xls') {
           await handleImportFile(file);
         } else {
-          setErrorMessage('Faqat CSV yoki Excel fayllarni import qilish mumkin.');
+          notify('warning', 'Faqat CSV yoki Excel fayllarni import qilish mumkin.');
         }
       }
     };
 
     window.addEventListener('paste', handlePasteEvent);
     return () => window.removeEventListener('paste', handlePasteEvent);
-  }, [handleImportFile, setErrorMessage]);
+  }, [handleImportFile, notify]);
 
   const getActiveCellStyle = (): any => {
     if (!sheet.activeCell) return {};
@@ -2370,7 +2377,7 @@ const App: React.FC = () => {
       const startCol = toInt(action.startCol);
       const endCol = toInt(action.endCol);
       if (startRow === null || endRow === null || startCol === null || endCol === null) {
-        setErrorMessage('AI: clear_range parametrlari noto‘g‘ri');
+        notify('warning', 'AI: clear_range parametrlari noto‘g‘ri');
         return;
       }
 
@@ -2405,7 +2412,7 @@ const App: React.FC = () => {
       const hasHeader = !!action.hasHeader;
 
       if (startRow === null || endRow === null || startCol === null || endCol === null) {
-        setErrorMessage('AI: sort_range parametrlari noto‘g‘ri');
+        notify('warning', 'AI: sort_range parametrlari noto‘g‘ri');
         return;
       }
 
@@ -2417,7 +2424,7 @@ const App: React.FC = () => {
 
       const bodyStart = hasHeader ? minR + 1 : minR;
       if (bodyStart >= maxR) {
-        setErrorMessage('AI: sort uchun kamida 2 qator kerak');
+        notify('warning', 'AI: sort uchun kamida 2 qator kerak');
         return;
       }
 
@@ -2490,7 +2497,7 @@ const App: React.FC = () => {
         .sort((a, b) => a - b);
 
       if (rows.length === 0) {
-        setErrorMessage('AI: delete_rows uchun rowlar topilmadi');
+        notify('warning', 'AI: delete_rows uchun rowlar topilmadi');
         return;
       }
 
@@ -2554,7 +2561,7 @@ const App: React.FC = () => {
         .sort((a, b) => a - b);
 
       if (cols.length === 0) {
-        setErrorMessage('AI: delete_cols uchun collar topilmadi');
+        notify('warning', 'AI: delete_cols uchun collar topilmadi');
         return;
       }
 
@@ -2604,8 +2611,8 @@ const App: React.FC = () => {
       return;
     }
 
-    setErrorMessage(`AI action qo‘llab-quvvatlanmaydi: ${kind}`);
-  }, [applyCellEdits, ensureWritable, realtimeClient, saveState]);
+    notify('warning', `AI action qo‘llab-quvvatlanmaydi: ${kind}`);
+  }, [applyCellEdits, ensureWritable, realtimeClient, saveState, notify]);
 
   const activeCellLabel = sheet.activeCell ? `${getColumnLabel(sheet.activeCell.col)}${sheet.activeCell.row + 1}` : '';
   const selectionLabel = (() => {
@@ -2777,7 +2784,7 @@ const App: React.FC = () => {
               onClose={handleCloseContextMenu}
             />
 
-            <ErrorToast message={errorMessage} onClose={() => setErrorMessage(null)} />
+            <Toast toast={toast} onClose={() => setToast(null)} />
           </div>
 
           <StatusBar

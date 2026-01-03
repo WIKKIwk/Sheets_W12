@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertCircle, LogIn, Sparkles, UserPlus } from 'lucide-react';
+import { AlertCircle, Loader2, LogIn, UserPlus } from 'lucide-react';
 import { AuthUser } from '../utils/api';
 import { usePresence } from '../utils/usePresence';
 
@@ -38,71 +38,92 @@ const AuthWall: React.FC<AuthWallProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-40 flex items-center justify-center backdrop-blur-sm px-4 ui-overlay"
+      className="fixed inset-0 z-40 flex items-center justify-center px-4 backdrop-blur-md auth-overlay ui-overlay"
       data-state={modalPresence.state}
-      style={{ background: 'rgba(0,0,0,0.5)' }}
     >
       <div
-        className="w-full max-w-md rounded-lg shadow-2xl p-6 space-y-4 ui-modal"
+        className="w-full max-w-[420px] rounded-2xl p-7 space-y-6 auth-card ui-modal"
         data-state={modalPresence.state}
-        style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}
       >
-        <div className="flex items-center gap-2">
-          <div className="p-2 rounded-lg" style={{ background: 'var(--bg-light)', color: 'var(--text-primary)' }}>
-            <Sparkles size={18} />
-          </div>
+        <div className="flex items-start gap-3">
           <div>
-            <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+            <p className="text-xs font-medium tracking-wide uppercase auth-kicker">W12C Sheets</p>
+            <h2 className="text-xl font-semibold leading-tight" style={{ color: 'var(--text-primary)' }}>
               {authMode === 'register' ? "Ro'yxatdan o'ting" : 'Kirish'}
             </h2>
-            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-              Backend bilan ishlash uchun hisobga kiring.
+            <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
+              {authMode === 'register'
+                ? "Yangi hisob yarating — bir daqiqada tayyor."
+                : 'Hisobingizga kiring va ishni davom ettiring.'}
             </p>
           </div>
         </div>
 
         {authError && (
-          <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+          <div className="flex items-center gap-2 text-sm rounded-xl px-3 py-2.5 auth-error">
             <AlertCircle size={16} />
             <span>{authError}</span>
           </div>
         )}
 
-        <form className="space-y-2" onSubmit={handleSubmit}>
+        <form className="space-y-4" onSubmit={handleSubmit}>
           {authMode === 'register' && (
-            <input
-              type="text"
-              value={authForm.name}
-              onChange={(e) => onChangeAuthForm('name', e.target.value)}
-              placeholder="Ism"
-              className="w-full rounded px-3 py-2 text-sm focus:outline-none"
-              style={{ border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }}
-            />
+            <div className="space-y-1.5">
+              <label className="auth-label" htmlFor="auth-name">Ism</label>
+              <input
+                id="auth-name"
+                type="text"
+                value={authForm.name}
+                onChange={(e) => onChangeAuthForm('name', e.target.value)}
+                placeholder="Ismingiz"
+                className="auth-input"
+                autoComplete="name"
+                autoFocus
+              />
+            </div>
           )}
-          <input
-            type="email"
-            value={authForm.email}
-            onChange={(e) => onChangeAuthForm('email', e.target.value)}
-            placeholder="Email"
-            className="w-full rounded px-3 py-2 text-sm focus:outline-none"
-            style={{ border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }}
-          />
-          <input
-            type="password"
-            value={authForm.password}
-            onChange={(e) => onChangeAuthForm('password', e.target.value)}
-            placeholder="Parol"
-            className="w-full rounded px-3 py-2 text-sm focus:outline-none"
-            style={{ border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }}
-          />
+          <div className="space-y-1.5">
+            <label className="auth-label" htmlFor="auth-email">Email</label>
+            <input
+              id="auth-email"
+              type="email"
+              value={authForm.email}
+              onChange={(e) => onChangeAuthForm('email', e.target.value)}
+              placeholder="name@example.com"
+              className="auth-input"
+              autoComplete="email"
+              inputMode="email"
+              autoFocus={authMode !== 'register'}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="auth-label" htmlFor="auth-password">Parol</label>
+            <input
+              id="auth-password"
+              type="password"
+              value={authForm.password}
+              onChange={(e) => onChangeAuthForm('password', e.target.value)}
+              placeholder="••••••••"
+              className="auth-input"
+              autoComplete={authMode === 'register' ? 'new-password' : 'current-password'}
+            />
+          </div>
           <button
-            onClick={onSubmitAuth}
+            type="submit"
             disabled={authLoading}
-            className="w-full inline-flex items-center justify-center gap-2 text-white rounded py-2 text-sm font-medium hover:opacity-80 disabled:opacity-60 transition-opacity btn-lift"
-            style={{ background: 'var(--primary)' }}
+            className="w-full h-11 inline-flex items-center justify-center gap-2 rounded-xl text-sm font-semibold disabled:opacity-60 transition-[filter,opacity,transform,box-shadow] btn-lift auth-primary-btn"
           >
-            {authMode === 'register' ? <UserPlus size={16} /> : <LogIn size={16} />}
-            {authMode === 'register' ? "Ro'yxatdan o'tish" : 'Kirish'}
+            {authLoading ? (
+              <>
+                <Loader2 size={16} className="animate-rotate" />
+                {authMode === 'register' ? 'Yaratilmoqda...' : 'Kirilmoqda...'}
+              </>
+            ) : (
+              <>
+                {authMode === 'register' ? <UserPlus size={16} /> : <LogIn size={16} />}
+                {authMode === 'register' ? "Ro'yxatdan o'tish" : 'Kirish'}
+              </>
+            )}
           </button>
         </form>
 
@@ -110,8 +131,7 @@ const AuthWall: React.FC<AuthWallProps> = ({
           {authMode === 'register' ? 'Hisobingiz bormi?' : "Hisob yo'qmi?"}{' '}
           <button
             onClick={onToggleMode}
-            className="font-medium hover:opacity-80 transition-opacity"
-            style={{ color: 'var(--text-primary)' }}
+            className="font-semibold auth-link"
           >
             {authMode === 'register' ? "Kirishga o'tish" : "Ro'yxatdan o'tish"}
           </button>

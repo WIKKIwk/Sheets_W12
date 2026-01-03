@@ -364,3 +364,95 @@ textarea,
     transition: none !important;
   }
 }
+
+/* ============================================
+   AUTH WALL (LOGIN / REGISTER)
+   ============================================ */
+
+.auth-overlay {
+  background:
+    radial-gradient(900px circle at 15% 20%, rgba(37, 99, 235, 0.12), transparent 55%),
+    radial-gradient(900px circle at 85% 80%, rgba(37, 99, 235, 0.10), transparent 60%),
+    rgba(0, 0, 0, 0.45);
+}
+
+[data-theme="dark"] .auth-overlay {
+  background:
+    radial-gradient(900px circle at 15% 20%, rgba(102, 126, 234, 0.18), transparent 55%),
+    radial-gradient(900px circle at 85% 80%, rgba(102, 126, 234, 0.14), transparent 60%),
+    rgba(0, 0, 0, 0.66);
+}
+
+.auth-card {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(12px) saturate(110%);
+}
+
+[data-theme="dark"] .auth-card {
+  background: rgba(28, 28, 28, 0.86);
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.55);
+}
+
+.auth-kicker {
+  color: var(--text-secondary);
+}
+
+.auth-label {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--text-secondary);
+}
+
+.auth-input {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border-color);
+  background: var(--bg-light);
+  color: var(--text-primary);
+  padding: 0.7rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.auth-input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.85;
+}
+
+.auth-primary-btn {
+  background: var(--brand);
+  color: #ffffff;
+}
+
+.auth-primary-btn:hover:not(:disabled) {
+  filter: brightness(0.95);
+}
+
+.auth-primary-btn:active:not(:disabled) {
+  filter: brightness(0.9);
+}
+
+.auth-error {
+  color: #b91c1c;
+  background: rgba(239, 68, 68, 0.10);
+  border: 1px solid rgba(239, 68, 68, 0.22);
+}
+
+[data-theme="dark"] .auth-error {
+  color: rgba(248, 113, 113, 0.95);
+  background: rgba(248, 113, 113, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.25);
+}
+
+.auth-link {
+  color: var(--brand);
+  transition: opacity 0.15s ease;
+}
+
+.auth-link:hover {
+  opacity: 0.85;
+}
