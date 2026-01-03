@@ -174,20 +174,20 @@ const Header: React.FC<HeaderProps> = ({
                                         alignItems: 'center',
                                         gap: '0.5rem',
                                         padding: '0.375rem 0.75rem',
-                                        border: '1px solid var(--border-color)',
-                                        borderRadius: '0.375rem',
+                                        border: '1px solid var(--chrome-border)',
+                                        borderRadius: 'var(--radius-sm)',
                                         cursor: isOwner ? 'pointer' : 'default',
-                                        transition: 'all 0.2s',
-                                        background: 'rgba(0,0,0,0.02)'
+                                        transition: 'box-shadow 0.15s ease, border-color 0.15s ease',
+                                        background: 'var(--chrome-control-bg)',
+                                        backdropFilter: 'blur(12px) saturate(160%)',
+                                        WebkitBackdropFilter: 'blur(12px) saturate(160%)',
                                     }}
                                     onMouseEnter={(e) => {
                                         if (!isOwner) return;
-                                        e.currentTarget.style.borderColor = 'var(--primary)';
-                                        e.currentTarget.style.background = 'rgba(0,0,0,0.04)';
+                                        e.currentTarget.style.boxShadow = 'inset 0 0 0 999px var(--chrome-control-hover)';
                                     }}
                                     onMouseLeave={(e) => {
-                                        e.currentTarget.style.borderColor = 'var(--border-color)';
-                                        e.currentTarget.style.background = 'rgba(0,0,0,0.02)';
+                                        e.currentTarget.style.boxShadow = 'none';
                                     }}
                                 >
                                     <Edit3 size={14} style={{ color: 'var(--text-secondary)', flexShrink: 0 }} />
