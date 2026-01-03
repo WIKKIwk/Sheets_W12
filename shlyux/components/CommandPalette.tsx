@@ -21,7 +21,7 @@ type CommandPaletteProps = {
 const normalize = (value: string) => value.toLowerCase().replace(/\s+/g, ' ').trim();
 
 const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, commands, onClose }) => {
-  const presence = usePresence(isOpen, { exitDurationMs: 180 });
+  const presence = usePresence(isOpen, { exitDurationMs: 240 });
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const [query, setQuery] = useState('');
@@ -75,9 +75,8 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, commands, onClo
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center px-4 pt-24 ui-overlay"
+      className="fixed inset-0 z-50 flex items-start justify-center px-4 pt-24 ui-overlay ui-scrim ui-scrim-strong"
       data-state={presence.state}
-      style={{ background: 'rgba(0,0,0,0.45)' }}
       onClick={onClose}
       role="dialog"
       aria-modal="true"

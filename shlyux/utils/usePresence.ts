@@ -8,7 +8,7 @@ export function usePresence(
     exitDurationMs?: number;
   }
 ): { isMounted: boolean; state: PresenceState } {
-  const exitDurationMs = opts?.exitDurationMs ?? 180;
+  const exitDurationMs = opts?.exitDurationMs ?? 240;
 
   const [isMounted, setIsMounted] = useState(open);
   const [state, setState] = useState<PresenceState>(open ? 'closed' : 'closed');

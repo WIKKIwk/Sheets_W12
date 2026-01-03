@@ -22,7 +22,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, fileId, fileName, token
   const [adding, setAdding] = useState(false);
 
   const emailRef = useRef<HTMLInputElement | null>(null);
-  const modalPresence = usePresence(isOpen, { exitDurationMs: 180 });
+  const modalPresence = usePresence(isOpen, { exitDurationMs: 240 });
 
   const canSubmit = useMemo(() => {
     const trimmed = email.trim();
@@ -111,9 +111,8 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, fileId, fileName, token
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center ui-overlay"
+      className="fixed inset-0 z-50 flex items-center justify-center ui-overlay ui-scrim ui-scrim-strong"
       data-state={modalPresence.state}
-      style={{ background: 'rgba(0,0,0,0.45)' }}
       onClick={onClose}
     >
       <div

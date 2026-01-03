@@ -27,7 +27,7 @@ const AuthWall: React.FC<AuthWallProps> = ({
   onToggleMode,
 }) => {
   const shouldOpen = isOpen && !user;
-  const modalPresence = usePresence(shouldOpen, { exitDurationMs: 180 });
+  const modalPresence = usePresence(shouldOpen, { exitDurationMs: 240 });
 
   if (!modalPresence.isMounted) return null;
 

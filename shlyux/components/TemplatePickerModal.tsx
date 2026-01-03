@@ -74,7 +74,7 @@ const TemplatePickerModal: React.FC<TemplatePickerModalProps> = ({ isOpen, hasEx
   ]), []);
 
   const [pending, setPending] = useState<SheetTemplate | null>(null);
-  const modalPresence = usePresence(isOpen, { exitDurationMs: 180 });
+  const modalPresence = usePresence(isOpen, { exitDurationMs: 240 });
 
   if (!modalPresence.isMounted) return null;
 
@@ -89,9 +89,8 @@ const TemplatePickerModal: React.FC<TemplatePickerModalProps> = ({ isOpen, hasEx
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center ui-overlay"
+      className="fixed inset-0 z-50 flex items-center justify-center ui-overlay ui-scrim ui-scrim-strong"
       data-state={modalPresence.state}
-      style={{ background: 'rgba(0,0,0,0.45)' }}
     >
       <div
         className="w-full max-w-3xl rounded-lg shadow-xl overflow-hidden ui-modal"

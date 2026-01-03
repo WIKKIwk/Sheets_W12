@@ -56,7 +56,7 @@ const FunctionPicker: React.FC<FunctionPickerProps> = ({ onInsert }) => {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
-  const popoverPresence = usePresence(open, { exitDurationMs: 180 });
+  const popoverPresence = usePresence(open, { exitDurationMs: 240 });
 
   useEffect(() => {
     if (!open) return;

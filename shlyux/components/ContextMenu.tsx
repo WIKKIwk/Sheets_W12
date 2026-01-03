@@ -40,7 +40,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
     onClose
 }) => {
     const menuRef = useRef<HTMLDivElement>(null);
-    const menuPresence = usePresence(show, { exitDurationMs: 180 });
+    const menuPresence = usePresence(show, { exitDurationMs: 240 });
     const lastPosRef = useRef({ x, y });
 
     useEffect(() => {
@@ -103,9 +103,11 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
             style={{
                 left: pos.x,
                 top: pos.y,
-                background: 'var(--card-bg)',
-                border: '1px solid var(--border-color)',
-                transformOrigin: 'top left'
+                background: 'var(--menu-bg)',
+                border: '1px solid var(--chrome-border)',
+                transformOrigin: 'top left',
+                backdropFilter: 'blur(18px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(18px) saturate(180%)',
             }}
         >
             {menuItems.map((item, idx) => {

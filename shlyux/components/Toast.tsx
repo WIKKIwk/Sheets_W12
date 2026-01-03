@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, AlertTriangle, CheckCircle2, Info, X } from 'lucide-react';
+import { usePresence } from '../utils/usePresence';
 
 export type ToastTone = 'success' | 'info' | 'warning' | 'danger';
 
@@ -23,10 +24,17 @@ const toneDefaults: Record<ToastTone, { title: string; accent: string; Icon: typ
 };
 
 const Toast: React.FC<ToastProps> = ({ toast, onClose }) => {
-  const config = useMemo(() => {
-    if (!toast) return null;
-    return toneDefaults[toast.tone];
+  const presence = usePresence(!!toast, { exitDurationMs: 240 });
+  const [snapshot, setSnapshot] = useState<ToastState | null>(toast);
+
+  useEffect(() => {
+    if (toast) setSnapshot(toast);
   }, [toast]);
+
+  const config = useMemo(() => {
+    if (!snapshot) return null;
+    return toneDefaults[snapshot.tone];
+  }, [snapshot]);
 
   useEffect(() => {
     if (!toast) return;
@@ -35,23 +43,25 @@ const Toast: React.FC<ToastProps> = ({ toast, onClose }) => {
     return () => window.clearTimeout(timer);
   }, [toast, onClose]);
 
-  if (!toast || !config) return null;
+  if (!presence.isMounted || !snapshot || !config) return null;
 
-  const title = toast.title ?? config.title;
+  const title = snapshot.title ?? config.title;
   const Icon = config.Icon;
 
   return (
     <div
-      className="toast fixed top-4 right-4 z-50 max-w-md rounded-xl p-4 flex items-start gap-3"
+      className="toast ui-toast fixed top-4 right-4 z-50 max-w-md rounded-xl p-4 flex items-start gap-3"
+      data-state={presence.state}
       style={{
-        background: 'var(--card-bg)',
-        border: `1px solid var(--border-color)`,
+        background: 'var(--menu-bg)',
+        border: `1px solid var(--chrome-border)`,
         borderLeft: `4px solid ${config.accent}`,
         boxShadow: 'var(--shadow-lg)',
-        animation: 'toastSlideIn 0.22s cubic-bezier(0.4, 0, 0.2, 1)',
+        backdropFilter: 'blur(18px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(18px) saturate(180%)',
       }}
-      role={toast.tone === 'danger' ? 'alert' : 'status'}
-      aria-live={toast.tone === 'danger' ? 'assertive' : 'polite'}
+      role={snapshot.tone === 'danger' ? 'alert' : 'status'}
+      aria-live={snapshot.tone === 'danger' ? 'assertive' : 'polite'}
     >
       <Icon size={20} style={{ color: config.accent, flexShrink: 0, marginTop: 2 }} />
       <div className="flex-1 min-w-0">
@@ -59,7 +69,7 @@ const Toast: React.FC<ToastProps> = ({ toast, onClose }) => {
           {title}
         </p>
         <p className="text-sm mt-1 break-words" style={{ color: 'var(--text-secondary)' }}>
-          {toast.message}
+          {snapshot.message}
         </p>
       </div>
       <button
@@ -73,16 +83,6 @@ const Toast: React.FC<ToastProps> = ({ toast, onClose }) => {
       >
         <X size={16} />
       </button>
-
-      <style>{`
-        @keyframes toastSlideIn {
-          from { transform: translateX(12px); opacity: 0; }
-          to { transform: translateX(0); opacity: 1; }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .toast { animation: none !important; }
-        }
-      `}</style>
     </div>
   );
 };

@@ -53,10 +53,10 @@ const Toolbar: React.FC<ToolbarProps> = ({
 }) => {
   const [showFontDropdown, setShowFontDropdown] = useState(false);
   const fontDropdownRef = useRef<HTMLDivElement>(null);
-  const fontDropdownPresence = usePresence(showFontDropdown, { exitDurationMs: 180 });
+  const fontDropdownPresence = usePresence(showFontDropdown, { exitDurationMs: 240 });
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
-  const morePresence = usePresence(moreOpen, { exitDurationMs: 180 });
+  const morePresence = usePresence(moreOpen, { exitDurationMs: 240 });
 
   const btnClass = (active: boolean) =>
     `p-2 rounded hover:bg-gray-100 transition-colors ${active ? 'bg-blue-100 text-blue-600 border border-blue-300' : 'text-primary'}`;

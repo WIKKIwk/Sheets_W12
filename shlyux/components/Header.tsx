@@ -58,9 +58,9 @@ const Header: React.FC<HeaderProps> = ({
     const isOwner = (currentAccessRole || 'owner') === 'owner';
     const isViewer = currentAccessRole === 'viewer';
 
-    const filesPresence = usePresence(filesOpen, { exitDurationMs: 180 });
-    const devPresence = usePresence(devOpen, { exitDurationMs: 180 });
-    const userMenuPresence = usePresence(userMenuOpen, { exitDurationMs: 180 });
+    const filesPresence = usePresence(filesOpen, { exitDurationMs: 240 });
+    const devPresence = usePresence(devOpen, { exitDurationMs: 240 });
+    const userMenuPresence = usePresence(userMenuOpen, { exitDurationMs: 240 });
 
     const handleSaveName = () => {
         onFileNameChange(editValue);

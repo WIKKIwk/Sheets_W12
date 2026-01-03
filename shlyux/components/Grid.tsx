@@ -745,11 +745,11 @@ const Grid: React.FC<GridProps> = ({
     return (
       <>
         {/* Original selection */}
-        <div
-          className="absolute"
-          style={{
-            left,
-            top,
+	        <div
+	          className="absolute ui-selection"
+	          style={{
+	            left,
+	            top,
             width,
             height,
             border: '2px solid var(--sheet-selection-border)',
@@ -764,12 +764,12 @@ const Grid: React.FC<GridProps> = ({
         />
 
         {/* Drag preview - shows where selection will move */}
-        {isMovingSelection && dragConfirmed && dragPreviewPos && (
-          <div
-            className="absolute pointer-events-none"
-            style={{
-              left: previewLeft,
-              top: previewTop,
+	        {isMovingSelection && dragConfirmed && dragPreviewPos && (
+	          <div
+	            className="absolute pointer-events-none ui-selection"
+	            style={{
+	              left: previewLeft,
+	              top: previewTop,
               width,
               height,
               border: hasDataInTarget
@@ -825,25 +825,26 @@ const Grid: React.FC<GridProps> = ({
                   ? 'var(--sheet-header-hover-bg)'
                   : 'var(--bg-light)';
               return (
-                <div
-                  key={c}
-                  style={{
+	                <div
+	                  key={c}
+	                  style={{
                     position: 'absolute',
                     left: colOffsets[c] - rowHeaderWidth,
                     width,
                     height: columnHeaderHeight,
                     border: '1px solid var(--border-color)',
-                    background,
-                    color: 'var(--text-primary)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '12px',
-                    fontWeight: 'bold',
-                    userSelect: 'none'
-                  }}
-                  onMouseEnter={() => setHoveredCol(c)}
-                  onMouseLeave={() => setHoveredCol(null)}
+	                    background,
+	                    color: 'var(--text-primary)',
+	                    display: 'flex',
+	                    alignItems: 'center',
+	                    justifyContent: 'center',
+	                    transition: 'background-color var(--ui-motion-fast) var(--ui-motion-ease)',
+	                    fontSize: '12px',
+	                    fontWeight: 'bold',
+	                    userSelect: 'none'
+	                  }}
+	                  onMouseEnter={() => setHoveredCol(c)}
+	                  onMouseLeave={() => setHoveredCol(null)}
                 >
                   {getColumnLabel(c)}
                   <div
@@ -884,25 +885,26 @@ const Grid: React.FC<GridProps> = ({
               }}
             >
               {/* Row Header */}
-              <div
-                style={{
+	              <div
+	                style={{
                   position: 'sticky',
                   left: 0,
                   width: rowHeaderWidth,
                   height: rowHeight,
                   border: '1px solid var(--border-color)',
-                  background: rowHeaderBackground,
-                  color: 'var(--text-primary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '12px',
-                  fontWeight: 'bold',
-                  userSelect: 'none',
-                  zIndex: 10
-                }}
-                onMouseEnter={() => setHoveredRow(r)}
-                onMouseLeave={() => setHoveredRow(null)}
+	                  background: rowHeaderBackground,
+	                  color: 'var(--text-primary)',
+	                  display: 'flex',
+	                  alignItems: 'center',
+	                  justifyContent: 'center',
+	                  transition: 'background-color var(--ui-motion-fast) var(--ui-motion-ease)',
+	                  fontSize: '12px',
+	                  fontWeight: 'bold',
+	                  userSelect: 'none',
+	                  zIndex: 10
+	                }}
+	                onMouseEnter={() => setHoveredRow(r)}
+	                onMouseLeave={() => setHoveredRow(null)}
               >
                 {r + 1}
                 <div

@@ -15,7 +15,7 @@ const clamp = (value: number, min: number, max: number) => Math.min(max, Math.ma
 
 const Tooltip: React.FC<TooltipProps> = ({ label, shortcut, side = 'top', children }) => {
   const [open, setOpen] = useState(false);
-  const presence = usePresence(open, { exitDurationMs: 120 });
+  const presence = usePresence(open, { exitDurationMs: 150 });
 
   const triggerRef = useRef<HTMLSpanElement | null>(null);
   const [pos, setPos] = useState<{ top: number; left: number; side: Exclude<TooltipSide, 'auto'> }>({

@@ -578,7 +578,7 @@ const GeminiSidebar: React.FC<GeminiSidebarProps> = ({ isOpen, onClose, sheetSta
   const [serverKeyLoading, setServerKeyLoading] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const [showHistory, setShowHistory] = useState(false);
-  const historyPresence = usePresence(showHistory, { exitDurationMs: 180 });
+  const historyPresence = usePresence(showHistory, { exitDurationMs: 240 });
 
   // Settings state
   const [showSettings, setShowSettings] = useState(() => {
@@ -596,7 +596,7 @@ const GeminiSidebar: React.FC<GeminiSidebarProps> = ({ isOpen, onClose, sheetSta
   });
   const [apiKeyError, setApiKeyError] = useState<string | null>(null);
   const [showPrompts, setShowPrompts] = useState(false);
-  const promptsPresence = usePresence(showPrompts, { exitDurationMs: 180 });
+  const promptsPresence = usePresence(showPrompts, { exitDurationMs: 240 });
   const [selectedLanguage, setSelectedLanguage] = useState(() => {
     if (typeof window === 'undefined') return 'uzbek';
     return localStorage.getItem('ai-language') || 'uzbek';

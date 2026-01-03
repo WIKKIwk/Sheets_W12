@@ -64,7 +64,7 @@ export default function ColorPicker({
   onChange: (value: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const presence = usePresence(open, { exitDurationMs: 180 });
+  const presence = usePresence(open, { exitDurationMs: 240 });
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   const [recentColors, setRecentColors] = useState<string[]>(() => readRecentColors());

@@ -33,6 +33,8 @@
   --chrome-control-hover: rgba(0, 0, 0, 0.04);
   --chrome-control-active: rgba(0, 0, 0, 0.07);
   --menu-bg: rgba(255, 255, 255, 0.92);
+  --scrim: rgba(0, 0, 0, 0.28);
+  --scrim-strong: rgba(0, 0, 0, 0.38);
 
   --sheet-header-hover-bg: rgba(10, 132, 255, 0.10);
   --sheet-header-active-bg: rgba(10, 132, 255, 0.16);
@@ -76,6 +78,8 @@
   --chrome-control-hover: rgba(255, 255, 255, 0.08);
   --chrome-control-active: rgba(255, 255, 255, 0.12);
   --menu-bg: rgba(28, 28, 30, 0.92);
+  --scrim: rgba(0, 0, 0, 0.55);
+  --scrim-strong: rgba(0, 0, 0, 0.65);
 
   --sheet-header-hover-bg: rgba(10, 132, 255, 0.18);
   --sheet-header-active-bg: rgba(10, 132, 255, 0.30);
@@ -219,11 +223,13 @@ html {
 button {
   position: relative;
   transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease,
-    box-shadow 0.15s ease,
-    transform 0.15s ease;
+    background-color var(--ui-motion-fast) var(--ui-motion-ease),
+    border-color var(--ui-motion-fast) var(--ui-motion-ease),
+    color var(--ui-motion-fast) var(--ui-motion-ease),
+    box-shadow var(--ui-motion-fast) var(--ui-motion-ease),
+    transform var(--ui-motion-fast) var(--ui-motion-ease),
+    filter var(--ui-motion-fast) var(--ui-motion-ease);
+  will-change: transform;
 }
 
 button:hover:not(:disabled) {
@@ -232,7 +238,7 @@ button:hover:not(:disabled) {
 }
 
 button:active:not(:disabled) {
-  transform: scale(0.98);
+  transform: scale(0.985);
 }
 
 button:disabled {
@@ -269,7 +275,7 @@ button svg {
 
 /* Link and anchor animations */
 a {
-  transition: color 0.15s ease, opacity 0.15s ease;
+  transition: color var(--ui-motion-fast) var(--ui-motion-ease), opacity var(--ui-motion-fast) var(--ui-motion-ease);
 }
 
 /* Input focus animations */
@@ -277,7 +283,9 @@ input:focus,
 select:focus,
 textarea:focus {
   transform: none;
-  transition: all 0.2s ease;
+  transition:
+    box-shadow var(--ui-motion-fast) var(--ui-motion-ease),
+    border-color var(--ui-motion-fast) var(--ui-motion-ease);
   outline: none;
   box-shadow: 0 0 0 3px var(--focus-ring);
   border-color: var(--brand) !important;
@@ -289,7 +297,13 @@ select,
 textarea,
 .action-btn,
 .user-btn {
-  transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  transition:
+    background-color var(--ui-motion-fast) var(--ui-motion-ease),
+    border-color var(--ui-motion-fast) var(--ui-motion-ease),
+    box-shadow var(--ui-motion-fast) var(--ui-motion-ease),
+    color var(--ui-motion-fast) var(--ui-motion-ease),
+    opacity var(--ui-motion-fast) var(--ui-motion-ease),
+    transform var(--ui-motion-fast) var(--ui-motion-ease);
 }
 
 /* ============================================
@@ -297,14 +311,25 @@ textarea,
    ============================================ */
 
 :root {
-  --ui-motion-fast: 140ms;
-  --ui-motion-normal: 180ms;
-  --ui-motion-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --ui-motion-fast: 150ms;
+  --ui-motion-normal: 240ms;
+  --ui-motion-slow: 360ms;
+  --ui-motion-ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .ui-overlay {
   opacity: 0;
   transition: opacity var(--ui-motion-normal) var(--ui-motion-ease);
+}
+
+.ui-scrim {
+  background: var(--scrim);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+}
+
+.ui-scrim-strong {
+  background: var(--scrim-strong);
 }
 
 .ui-overlay[data-state="open"] {
@@ -357,6 +382,34 @@ textarea,
   opacity: 0;
   transform: translateY(6px) scale(0.98);
   pointer-events: none;
+}
+
+.ui-toast {
+  opacity: 0;
+  transform: translate3d(12px, 0, 0) scale(0.985);
+  transform-origin: top right;
+  transition:
+    opacity var(--ui-motion-fast) var(--ui-motion-ease),
+    transform var(--ui-motion-normal) var(--ui-motion-ease);
+  will-change: opacity, transform;
+}
+
+.ui-toast[data-state="open"] {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+.ui-toast[data-state="closed"] {
+  opacity: 0;
+  transform: translate3d(12px, 0, 0) scale(0.985);
+  pointer-events: none;
+}
+
+.ui-selection {
+  transition:
+    background-color var(--ui-motion-fast) var(--ui-motion-ease),
+    border-color var(--ui-motion-fast) var(--ui-motion-ease),
+    opacity var(--ui-motion-fast) var(--ui-motion-ease);
 }
 
 .ui-tooltip {
@@ -444,6 +497,18 @@ textarea,
   }
 
   .ui-tooltip {
+    transition: none !important;
+  }
+
+  .ui-toast {
+    transition: none !important;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea {
     transition: none !important;
   }
 }

@@ -15,7 +15,7 @@ const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
   onConfirm,
   onCancel,
 }) => {
-  const modalPresence = usePresence(isOpen, { exitDurationMs: 180 });
+  const modalPresence = usePresence(isOpen, { exitDurationMs: 240 });
 
   useEffect(() => {
     if (!isOpen) return;
@@ -30,9 +30,8 @@ const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center ui-overlay"
+      className="fixed inset-0 z-50 flex items-center justify-center ui-overlay ui-scrim ui-scrim-strong"
       data-state={modalPresence.state}
-      style={{ background: 'rgba(0,0,0,0.45)' }}
       onClick={onCancel}
     >
       <div

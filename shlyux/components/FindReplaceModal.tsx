@@ -52,7 +52,7 @@ const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
 }) => {
   const findInputRef = useRef<HTMLInputElement | null>(null);
   const replaceInputRef = useRef<HTMLInputElement | null>(null);
-  const modalPresence = usePresence(isOpen, { exitDurationMs: 180 });
+  const modalPresence = usePresence(isOpen, { exitDurationMs: 240 });
 
   useEffect(() => {
     if (!isOpen) return;
@@ -86,9 +86,8 @@ const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center ui-overlay"
+      className="fixed inset-0 z-50 flex items-center justify-center ui-overlay ui-scrim"
       data-state={modalPresence.state}
-      style={{ background: 'rgba(0,0,0,0.45)' }}
     >
       <div
         className="w-full max-w-xl rounded-lg shadow-xl overflow-hidden ui-modal"
