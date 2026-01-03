@@ -504,6 +504,7 @@ type AiAction =
   | { action: 'update_cells'; cells: AiCellEdit[]; message?: string }
   | { action: 'copy_range'; startRow: number; endRow: number; startCol: number; endCol: number; targetRow: number; targetCol: number; mode?: 'sparse' | 'overwrite'; message?: string }
   | { action: 'move_range'; startRow: number; endRow: number; startCol: number; endCol: number; targetRow: number; targetCol: number; mode?: 'sparse' | 'overwrite'; message?: string }
+  | { action: 'delete_category_block'; category: string; categoryCol?: number; message?: string }
   | { action: 'clear_range'; startRow: number; endRow: number; startCol: number; endCol: number; message?: string }
   | { action: 'sort_range'; startRow: number; endRow: number; startCol: number; endCol: number; sortCol?: number; direction: 'asc' | 'desc'; hasHeader?: boolean; message?: string }
   | { action: 'delete_rows'; rows: number[]; message?: string }
@@ -1077,6 +1078,8 @@ const GeminiSidebar: React.FC<GeminiSidebarProps> = ({ isOpen, onClose, sheetSta
         4) Delete rows/cols (shifts the sheet):
            {"action":"delete_rows","rows":[3,4,10],"message":"Deleted rows"}
            {"action":"delete_cols","cols":[0,2],"message":"Deleted columns"}
+        4b) Delete a category block (header row + items until next category header):
+           {"action":"delete_category_block","category":"RAM","categoryCol":0,"message":"Deleted RAM category"}
         5) Multiple steps:
            {"actions":[{...},{...}],"message":"Done"}
         6) No-op:

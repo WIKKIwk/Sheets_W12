@@ -2732,6 +2732,69 @@ const App: React.FC = () => {
       }
     };
 
+    const performDeleteRows = (rawRows: any, emptyMessage: string): boolean => {
+      const raw = Array.isArray(rawRows) ? rawRows : [];
+      const rows = Array.from(new Set(raw.map(toInt).filter((v): v is number => v !== null)))
+        .map((v) => Math.max(0, v))
+        .filter((v) => v < base.rowCount)
+        .sort((a, b) => a - b);
+
+      if (rows.length === 0) {
+        notify('warning', emptyMessage);
+        return false;
+      }
+
+      const deleteSet = new Set(rows);
+      const newData: GridData = {};
+      Object.entries(base.data).forEach(([id, cell]) => {
+        const [rowStr, colStr] = id.split(',');
+        const row = parseInt(rowStr, 10);
+        const col = parseInt(colStr, 10);
+        if (!Number.isFinite(row) || !Number.isFinite(col)) return;
+        if (deleteSet.has(row)) return;
+        const shift = countBefore(rows, row);
+        const nextRow = row - shift;
+        if (nextRow < 0) return;
+        newData[getCellId(nextRow, col)] = { ...cell };
+      });
+
+      const baseRowCount = Math.max(NUM_ROWS, base.rowCount - rows.length);
+      const highest = getHighestRowIndex(newData);
+      const rowCount = highest >= 0 ? ensureRowCountForIndex(baseRowCount, highest) : baseRowCount;
+
+      const shiftRow = (row: number) => row - countBefore(rows, row);
+      const nextActive = base.activeCell
+        ? {
+            row: Math.max(0, Math.min(rowCount - 1, shiftRow(base.activeCell.row))),
+            col: Math.max(0, Math.min(NUM_COLS - 1, base.activeCell.col)),
+          }
+        : null;
+      const nextSelection = base.selection
+        ? {
+            start: {
+              row: Math.max(0, Math.min(rowCount - 1, shiftRow(base.selection.start.row))),
+              col: Math.max(0, Math.min(NUM_COLS - 1, base.selection.start.col)),
+            },
+            end: {
+              row: Math.max(0, Math.min(rowCount - 1, shiftRow(base.selection.end.row))),
+              col: Math.max(0, Math.min(NUM_COLS - 1, base.selection.end.col)),
+            },
+          }
+        : null;
+
+      const editsToSend = diffValues(base.data, newData);
+      const nextSheet = {
+        ...base,
+        rowCount,
+        data: recomputeSheet(newData),
+        activeCell: nextActive,
+        selection: nextSelection,
+      };
+      saveState(nextSheet);
+      broadcast(editsToSend);
+      return true;
+    };
+
     if (kind === 'copy_range' || kind === 'move_range') {
       const isMove = kind === 'move_range';
       if (!ensureWritable(isMove ? "AI ko'chirish" : 'AI copy')) return;
@@ -2843,6 +2906,89 @@ const App: React.FC = () => {
       saveState(nextSheet);
       broadcast(diffValues(base.data, newData));
       notify('success', isMove ? "Ko'chirildi" : 'Copy qilindi', { duration: 1800 });
+      return;
+    }
+
+    if (kind === 'delete_category_block') {
+      if (!ensureWritable("AI kategoriya o'chirish")) return;
+      const category = typeof action.category === 'string' ? action.category.trim() : '';
+      if (!category) {
+        notify('warning', 'AI: delete_category_block uchun kategoriya topilmadi');
+        return;
+      }
+
+      const categoryColRaw = toInt(action.categoryCol);
+      const categoryCol = categoryColRaw === null ? 0 : categoryColRaw;
+      if (categoryCol < 0 || categoryCol >= NUM_COLS) {
+        notify('warning', `AI: categoryCol noto‘g‘ri (0..${NUM_COLS - 1})`);
+        return;
+      }
+
+      const normalize = (value: string) => value.toLowerCase().replace(/\s+/g, ' ').trim();
+      const rowNonEmpty = new Map<number, number>();
+      const categoryByRow = new Map<number, string>();
+
+      Object.entries(base.data).forEach(([id, cell]) => {
+        const [rowStr, colStr] = id.split(',');
+        const row = parseInt(rowStr, 10);
+        const col = parseInt(colStr, 10);
+        if (!Number.isFinite(row) || !Number.isFinite(col) || row < 0 || col < 0) return;
+
+        const raw = (cell?.value ?? '').toString();
+        const computed = (cell?.computed ?? '').toString();
+        const display = (computed && computed.trim() !== '' ? computed : raw).toString().trim();
+        if (!display) return;
+
+        rowNonEmpty.set(row, (rowNonEmpty.get(row) ?? 0) + 1);
+        if (col === categoryCol) categoryByRow.set(row, display);
+      });
+
+      const target = normalize(category);
+      const matchedRows = Array.from(categoryByRow.entries())
+        .filter(([_, value]) => normalize(value) === target)
+        .map(([row]) => row)
+        .sort((a, b) => a - b);
+
+      if (matchedRows.length === 0) {
+        notify('warning', `AI: kategoriya topilmadi (${category})`);
+        return;
+      }
+
+      const highestUsed = getHighestRowIndex(base.data);
+      const scanLimit = highestUsed >= 0 ? Math.min(base.rowCount, highestUsed + 1) : base.rowCount;
+      const isHeaderRow = (row: number): boolean => {
+        const val = (categoryByRow.get(row) ?? '').trim();
+        if (!val) return false;
+        const nonEmpty = rowNonEmpty.get(row) ?? 0;
+        if (nonEmpty > 1) return false;
+        if (val.length > 32) return false;
+        if (!/[a-zа-я]/i.test(val)) return false;
+        return true;
+      };
+
+      const headerStarts = matchedRows.filter(isHeaderRow);
+      const rowsToDelete: number[] = [];
+      if (headerStarts.length === 0) {
+        rowsToDelete.push(...matchedRows);
+      } else {
+        for (const startRow of headerStarts) {
+          let endRow = scanLimit;
+          for (let r = startRow + 1; r < scanLimit; r++) {
+            if (isHeaderRow(r)) {
+              endRow = r;
+              break;
+            }
+          }
+          for (let r = startRow; r < endRow; r++) rowsToDelete.push(r);
+        }
+      }
+
+      const uniqueRows = Array.from(new Set(rowsToDelete))
+        .filter((r) => r >= 0 && r < base.rowCount)
+        .sort((a, b) => a - b);
+
+      if (!performDeleteRows(uniqueRows, 'AI: delete_category_block uchun rowlar topilmadi')) return;
+      notify('success', `Kategoriya o'chirildi: ${category}`, { duration: 1800 });
       return;
     }
 
@@ -2966,65 +3112,7 @@ const App: React.FC = () => {
 
     if (kind === 'delete_rows') {
       if (!ensureWritable("AI qator o'chirish")) return;
-      const raw = Array.isArray(action.rows) ? action.rows : [];
-      const rows = Array.from(new Set(raw.map(toInt).filter((v): v is number => v !== null)))
-        .map((v) => Math.max(0, v))
-        .filter((v) => v < base.rowCount)
-        .sort((a, b) => a - b);
-
-      if (rows.length === 0) {
-        notify('warning', 'AI: delete_rows uchun rowlar topilmadi');
-        return;
-      }
-
-      const deleteSet = new Set(rows);
-      const newData: GridData = {};
-      Object.entries(base.data).forEach(([id, cell]) => {
-        const [rowStr, colStr] = id.split(',');
-        const row = parseInt(rowStr, 10);
-        const col = parseInt(colStr, 10);
-        if (!Number.isFinite(row) || !Number.isFinite(col)) return;
-        if (deleteSet.has(row)) return;
-        const shift = countBefore(rows, row);
-        const nextRow = row - shift;
-        if (nextRow < 0) return;
-        newData[getCellId(nextRow, col)] = { ...cell };
-      });
-
-      const baseRowCount = Math.max(NUM_ROWS, base.rowCount - rows.length);
-      const highest = getHighestRowIndex(newData);
-      const rowCount = highest >= 0 ? ensureRowCountForIndex(baseRowCount, highest) : baseRowCount;
-
-      const shiftRow = (row: number) => row - countBefore(rows, row);
-      const nextActive = base.activeCell
-        ? {
-            row: Math.max(0, Math.min(rowCount - 1, shiftRow(base.activeCell.row))),
-            col: Math.max(0, Math.min(NUM_COLS - 1, base.activeCell.col)),
-          }
-        : null;
-      const nextSelection = base.selection
-        ? {
-            start: {
-              row: Math.max(0, Math.min(rowCount - 1, shiftRow(base.selection.start.row))),
-              col: Math.max(0, Math.min(NUM_COLS - 1, base.selection.start.col)),
-            },
-            end: {
-              row: Math.max(0, Math.min(rowCount - 1, shiftRow(base.selection.end.row))),
-              col: Math.max(0, Math.min(NUM_COLS - 1, base.selection.end.col)),
-            },
-          }
-        : null;
-
-      const editsToSend = diffValues(base.data, newData);
-      const nextSheet = {
-        ...base,
-        rowCount,
-        data: recomputeSheet(newData),
-        activeCell: nextActive,
-        selection: nextSelection,
-      };
-      saveState(nextSheet);
-      broadcast(editsToSend);
+      performDeleteRows(action.rows, 'AI: delete_rows uchun rowlar topilmadi');
       return;
     }
 
