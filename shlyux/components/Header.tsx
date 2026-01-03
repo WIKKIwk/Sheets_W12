@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, Save, FolderOpen, FilePlus, LogOut, Download, Trash2, Edit3, Settings, LayoutTemplate, Share2 } from 'lucide-react';
+import { FileText, Save, FolderOpen, FilePlus, LogOut, Download, Trash2, Edit3, Settings, LayoutTemplate, Share2, GitBranch } from 'lucide-react';
 import { usePresence } from '../utils/usePresence';
 import Tooltip from './Tooltip';
 
@@ -7,6 +7,7 @@ interface HeaderProps {
     fileName: string;
     currentFileId: number | null;
     currentAccessRole?: 'owner' | 'editor' | 'viewer' | null;
+    activeBranchName?: string | null;
     user: any;
     files: any[];
     onFileNameChange: (name: string) => void;
@@ -26,6 +27,7 @@ const Header: React.FC<HeaderProps> = ({
     fileName,
     currentFileId,
     currentAccessRole,
+    activeBranchName,
     user,
     files,
     onFileNameChange,
@@ -47,6 +49,7 @@ const Header: React.FC<HeaderProps> = ({
 
     const isOwner = (currentAccessRole || 'owner') === 'owner';
     const isViewer = currentAccessRole === 'viewer';
+    const inBranchMode = !!activeBranchName;
 
     const filesPresence = usePresence(filesOpen, { exitDurationMs: 240 });
     const userMenuPresence = usePresence(userMenuOpen, { exitDurationMs: 240 });
@@ -113,6 +116,18 @@ const Header: React.FC<HeaderProps> = ({
                                 >
                                     <Edit3 size={14} style={{ color: 'var(--text-secondary)', flexShrink: 0 }} />
                                     <span>{fileName}</span>
+                                    {activeBranchName && (
+                                        <span
+                                            className="text-xs px-2 py-0.5 rounded inline-flex items-center gap-1"
+                                            style={{ background: 'rgba(59, 130, 246, 0.12)', color: '#1d4ed8' }}
+                                            title="Draft/branch rejimi"
+                                        >
+                                            <GitBranch size={12} />
+                                            <span className="truncate" style={{ maxWidth: 140 }}>
+                                                {activeBranchName}
+                                            </span>
+                                        </span>
+                                    )}
                                     {!isOwner && currentAccessRole && (
                                         <span
                                             className="text-xs px-2 py-0.5 rounded"
@@ -155,11 +170,11 @@ const Header: React.FC<HeaderProps> = ({
                             </Tooltip>
                         )}
 
-                        <Tooltip label="Save" shortcut="Ctrl+S">
+                        <Tooltip label={inBranchMode ? "Branch rejimi: merge qiling yoki main ga qayting" : 'Save'} shortcut="Ctrl+S">
                             <button
                                 onClick={onSaveFile}
-                                disabled={isViewer}
-                                className={`action-btn primary btn-lift ${isViewer ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                disabled={isViewer || inBranchMode}
+                                className={`action-btn primary btn-lift ${(isViewer || inBranchMode) ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 type="button"
                             >
                                 <Save size={14} />

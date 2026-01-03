@@ -54,6 +54,7 @@ export default function BranchManagerModal({
   const [mergePreview, setMergePreview] = useState<MergePreview | null>(null);
   const [mergeLoading, setMergeLoading] = useState(false);
   const [mergePicks, setMergePicks] = useState<Record<string, MergeChoice>>({});
+  const [mergeError, setMergeError] = useState<string | null>(null);
 
   const activeBranch = useMemo(
     () => (activeBranchId ? branches.find((b) => b.id === activeBranchId) ?? null : null),
@@ -66,6 +67,7 @@ export default function BranchManagerModal({
     setMergePreview(null);
     setMergeLoading(false);
     setMergePicks({});
+    setMergeError(null);
   }, [isOpen]);
 
   useEffect(() => {
@@ -102,10 +104,13 @@ export default function BranchManagerModal({
   };
 
   const handlePrepareMerge = async (branchId: string) => {
+    setMergeError(null);
     setMergeLoading(true);
     try {
       const preview = await onPrepareMerge(branchId);
       setMergePreview(preview);
+    } catch (err) {
+      setMergeError(err instanceof Error ? err.message : "Noma'lum xato");
     } finally {
       setMergeLoading(false);
     }
@@ -113,10 +118,13 @@ export default function BranchManagerModal({
 
   const handleApplyMerge = async () => {
     if (!mergePreview) return;
+    setMergeError(null);
     setMergeLoading(true);
     try {
       await onApplyMerge(mergePreview, mergePicks);
       setMergePreview(null);
+    } catch (err) {
+      setMergeError(err instanceof Error ? err.message : "Noma'lum xato");
     } finally {
       setMergeLoading(false);
     }
@@ -227,6 +235,11 @@ export default function BranchManagerModal({
                 Conflicts: {mergePreview.result.conflicts.length}
               </span>
             </div>
+            {mergeError ? (
+              <div className="px-5 pb-2 text-xs" style={{ color: '#b91c1c' }}>
+                {mergeError}
+              </div>
+            ) : null}
 
             <div
               style={{
@@ -503,6 +516,11 @@ export default function BranchManagerModal({
                   Processing…
                 </div>
               ) : null}
+              {mergeError ? (
+                <div className="text-xs" style={{ color: '#b91c1c' }}>
+                  {mergeError}
+                </div>
+              ) : null}
             </div>
           </div>
         )}
@@ -510,4 +528,3 @@ export default function BranchManagerModal({
     </div>
   );
 }
-

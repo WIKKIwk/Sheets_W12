@@ -7,6 +7,7 @@ import ContextMenu from './components/ContextMenu';
 import Header from './components/Header';
 import Profile from './components/Profile';
 import VersionHistoryModal from './components/VersionHistoryModal';
+import BranchManagerModal from './components/BranchManagerModal';
 import DeleteConfirmModal from './components/DeleteConfirmModal';
 import OverwriteConfirmModal from './components/OverwriteConfirmModal';
 import Toast, { ToastState, ToastTone } from './components/Toast';
@@ -17,7 +18,7 @@ import StatusBar from './components/StatusBar';
 import CommandPalette, { CommandPaletteItem } from './components/CommandPalette';
 import { API_BASE, AuthUser, fetchMe, getFile, getFileRealtimeToken, listFiles, login, register, saveFile, deleteFile, SheetFileMeta, convertExcel } from './utils/api';
 import { SheetSnapshot, addSnapshot, deleteSnapshot, readSnapshots, safeCloneSheetState } from './utils/snapshots';
-import { SheetBranch, readActiveBranchId, readBranches, updateBranchState, writeActiveBranchId, writeMainShadow } from './utils/branches';
+import { SheetBranch, addBranch, deleteBranch, mergeSheetsThreeWay, readActiveBranchId, readBranches, readMainShadow, updateBranchState, writeActiveBranchId, writeMainShadow } from './utils/branches';
 import { SheetState, ClipboardData, ContextMenuState, GridData, CellStyle, CellData } from './types';
 import { getCellId, getColumnLabel, recomputeSheet, NUM_COLS, NUM_ROWS, cellLabelToCoords } from './utils/spreadsheetUtils';
 import { RealtimeClient } from './utils/realtime';
@@ -187,6 +188,7 @@ const App: React.FC = () => {
 	  const remoteQueue = useRef<Record<string, string>>({});
 	  const [showProfile, setShowProfile] = useState(false);
 	  const [versionHistoryOpen, setVersionHistoryOpen] = useState(false);
+	  const [branchesOpen, setBranchesOpen] = useState(false);
 	  const [snapshots, setSnapshots] = useState<SheetSnapshot[]>([]);
 	  const [branches, setBranches] = useState<SheetBranch[]>(() => readBranches(null));
 	  const [activeBranchId, setActiveBranchId] = useState<string | null>(() => readActiveBranchId(null));
@@ -209,6 +211,11 @@ const App: React.FC = () => {
     notify('warning', actionLabel ? `Read-only: ${actionLabel} mumkin emas` : "Read-only: tahrirlash mumkin emas");
     return false;
   }, [currentAccessRole, notify]);
+
+  const activeBranch = useMemo(
+    () => (activeBranchId ? branches.find((b) => b.id === activeBranchId) ?? null : null),
+    [activeBranchId, branches]
+  );
 
   // Initialize theme and font from localStorage on mount
   useEffect(() => {
@@ -781,6 +788,202 @@ const App: React.FC = () => {
 	    notify('success', 'Snapshot tiklandi');
 	  }, [ensureWritable, snapshots, saveState, notify]);
 
+	  const disconnectRealtimeNow = useCallback(() => {
+	    setRealtimeClient((prev) => {
+	      if (prev) prev.disconnect();
+	      return null;
+	    });
+	    setRealtimeStatus('disconnected');
+	  }, []);
+
+	  const normalizeLoadedSheet = useCallback((state: SheetState): SheetState => {
+	    const highestRow = getHighestRowIndex(state.data || {});
+	    const rowCount = ensureRowCountForIndex(state.rowCount ?? NUM_ROWS, highestRow);
+	    return { ...state, rowCount, data: recomputeSheet(state.data || {}) };
+	  }, []);
+
+	  const handleCreateBranch = useCallback((name: string) => {
+	    if (!ensureWritable('branch create')) return;
+	    if (activeBranchId) {
+	      notify('warning', 'Branch yaratish uchun avval main ga qayting.');
+	      return;
+	    }
+	    const id = typeof crypto?.randomUUID === 'function'
+	      ? crypto.randomUUID()
+	      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+	    const now = Date.now();
+	    const base = safeCloneSheetState(sheet);
+	    const branch: SheetBranch = {
+	      id,
+	      name,
+	      createdAt: now,
+	      updatedAt: now,
+	      baseState: safeCloneSheetState(base),
+	      state: safeCloneSheetState(base),
+	    };
+
+	    writeMainShadow(currentFileId, sheet);
+	    setBranches(addBranch(currentFileId, branch));
+	    writeActiveBranchId(currentFileId, id);
+	    setActiveBranchId(id);
+	    activeBranchAppliedRef.current = `${currentFileId ?? 'local'}:${id}`;
+	    disconnectRealtimeNow();
+
+	    const nextSheet = normalizeLoadedSheet(branch.state);
+	    setEditingCell(null);
+	    setSheet(nextSheet);
+	    resetHistory(nextSheet);
+	    setSaveStatus('idle');
+	    setLastSavedAt(null);
+	    notify('success', 'Branch yaratildi');
+	  }, [ensureWritable, activeBranchId, sheet, currentFileId, notify, resetHistory, normalizeLoadedSheet, disconnectRealtimeNow]);
+
+	  const handleCheckoutBranch = useCallback((branchId: string) => {
+	    const branch = branches.find((b) => b.id === branchId);
+	    if (!branch) return;
+
+	    if (activeBranchId) {
+	      setBranches(updateBranchState(currentFileId, activeBranchId, sheet));
+	    } else {
+	      writeMainShadow(currentFileId, sheet);
+	    }
+
+	    writeActiveBranchId(currentFileId, branchId);
+	    setActiveBranchId(branchId);
+	    activeBranchAppliedRef.current = `${currentFileId ?? 'local'}:${branchId}`;
+	    disconnectRealtimeNow();
+
+	    const nextSheet = normalizeLoadedSheet(branch.state);
+	    setEditingCell(null);
+	    setSheet(nextSheet);
+	    resetHistory(nextSheet);
+	    setSaveStatus('idle');
+	    setLastSavedAt(null);
+	  }, [branches, activeBranchId, currentFileId, sheet, resetHistory, normalizeLoadedSheet, disconnectRealtimeNow]);
+
+	  const handleCheckoutMain = useCallback(async () => {
+	    if (activeBranchId) {
+	      setBranches(updateBranchState(currentFileId, activeBranchId, sheet));
+	    }
+	    writeActiveBranchId(currentFileId, null);
+	    setActiveBranchId(null);
+	    activeBranchAppliedRef.current = null;
+
+	    let mainState: SheetState | null = null;
+	    if (token && currentFileId != null) {
+	      try {
+	        const file = await getFile(token, currentFileId);
+	        mainState = file.state as SheetState;
+	      } catch (err) {
+	        notify('warning', `Main yuklashda xato: ${err instanceof Error ? err.message : "Noma'lum xato"}`);
+	      }
+	    }
+	    if (!mainState) {
+	      mainState = readMainShadow(currentFileId) ?? activeBranch?.baseState ?? sheet;
+	    }
+	    const nextSheet = normalizeLoadedSheet(mainState);
+	    setEditingCell(null);
+	    setSheet(nextSheet);
+	    resetHistory(nextSheet);
+	    setSaveStatus('idle');
+	    setLastSavedAt(null);
+	  }, [activeBranchId, currentFileId, sheet, token, notify, resetHistory, normalizeLoadedSheet, activeBranch]);
+
+	  const handleDeleteBranch = useCallback((branchId: string) => {
+	    if (branchId === activeBranchId) {
+	      notify('warning', 'Aktiv branch ni o‘chirish uchun avval main ga qayting.');
+	      return;
+	    }
+	    setBranches(deleteBranch(currentFileId, branchId));
+	    notify('success', 'Branch o‘chirildi');
+	  }, [activeBranchId, currentFileId, notify]);
+
+	  const handlePrepareBranchMerge = useCallback(async (branchId: string) => {
+	    if (!ensureWritable('merge')) {
+	      throw new Error('Read-only');
+	    }
+	    const branch = branches.find((b) => b.id === branchId);
+	    if (!branch) throw new Error('Branch topilmadi');
+
+	    let mainState: SheetState | null = null;
+	    if (token && currentFileId != null) {
+	      const file = await getFile(token, currentFileId);
+	      mainState = file.state as SheetState;
+	    }
+	    if (!mainState) {
+	      mainState = readMainShadow(currentFileId) ?? branch.baseState;
+	    }
+
+	    const baseN = normalizeLoadedSheet(branch.baseState);
+	    const mainN = normalizeLoadedSheet(mainState);
+	    if (branchId === activeBranchId) {
+	      setBranches(updateBranchState(currentFileId, branchId, sheet));
+	    }
+	    const branchSource = branchId === activeBranchId ? sheet : branch.state;
+	    const branchN = normalizeLoadedSheet(branchSource);
+	    const raw = mergeSheetsThreeWay(baseN, mainN, branchN);
+	    const mergedData = recomputeSheet(raw.merged.data || {});
+	    const highestRow = getHighestRowIndex(mergedData);
+	    const rowCount = ensureRowCountForIndex(raw.merged.rowCount ?? NUM_ROWS, highestRow);
+	    const mergedSheet = { ...raw.merged, data: mergedData, rowCount };
+
+	    return { branch: { ...branch, baseState: baseN, state: branchN }, result: { ...raw, merged: mergedSheet } };
+	  }, [ensureWritable, branches, token, currentFileId, normalizeLoadedSheet, activeBranchId, sheet]);
+
+	  const handleApplyBranchMerge = useCallback(async (
+	    preview: { branch: SheetBranch; result: ReturnType<typeof mergeSheetsThreeWay> & { merged: SheetState } },
+	    picks: Record<string, 'main' | 'branch'>
+	  ) => {
+	    if (!ensureWritable('merge')) return;
+
+	    const final = safeCloneSheetState(preview.result.merged);
+	    const mergedData = { ...(final.data || {}) };
+	    preview.result.conflicts.forEach((c) => {
+	      if (picks[c.id] !== 'branch') return;
+	      const cell = preview.branch.state.data?.[c.id];
+	      if (!cell || ((cell.value ?? '') === '' && !cell.style)) {
+	        delete mergedData[c.id];
+	      } else {
+	        mergedData[c.id] = { value: cell.value ?? '', style: cell.style };
+	      }
+	    });
+
+	    final.data = recomputeSheet(mergedData);
+	    const highestRow = getHighestRowIndex(final.data || {});
+	    final.rowCount = ensureRowCountForIndex(final.rowCount ?? NUM_ROWS, highestRow);
+
+	    writeActiveBranchId(currentFileId, null);
+	    setActiveBranchId(null);
+	    activeBranchAppliedRef.current = null;
+
+	    setEditingCell(null);
+	    setSheet(final);
+	    resetHistory(final);
+	    writeMainShadow(currentFileId, final);
+
+	    if (token && currentFileId != null && fileName) {
+	      const seq = ++saveSeqRef.current;
+	      setSaveStatus('saving');
+	      try {
+	        const payload = { id: currentFileId, name: fileName, state: final };
+	        await saveFile(token, payload);
+	        setFiles(await listFiles(token));
+	        if (seq === saveSeqRef.current) {
+	          setSaveStatus('saved');
+	          setLastSavedAt(Date.now());
+	        }
+	      } catch (err) {
+	        notify('danger', `Merge save xato: ${err instanceof Error ? err.message : "Noma'lum xato"}`);
+	        if (seq === saveSeqRef.current) {
+	          setSaveStatus('error');
+	        }
+	        return;
+	      }
+	    }
+
+	    notify('success', 'Merge bajarildi');
+	  }, [ensureWritable, currentFileId, token, fileName, notify, resetHistory]);
+
 	  // Undo function
 	  const undo = useCallback(() => {
 	    if (!ensureWritable('undo')) return;
@@ -834,6 +1037,7 @@ const App: React.FC = () => {
 	    setUser(null);
 	    setShareOpen(false);
 	    setVersionHistoryOpen(false);
+	    setBranchesOpen(false);
 	    setCurrentFileId(null);
 	    setFiles([]);
 	    setSnapshots([]);
@@ -855,6 +1059,8 @@ const App: React.FC = () => {
     writeActiveBranchId(null, null);
     setActiveBranchId(null);
     setBranches(readBranches(null));
+    setBranchesOpen(false);
+    setVersionHistoryOpen(false);
     setSheet(emptySheet);
     resetHistory(emptySheet);
     setCurrentFileId(null);
@@ -2774,6 +2980,7 @@ const App: React.FC = () => {
 
   const paletteCommands = useMemo<CommandPaletteItem[]>(() => {
     const isReadOnly = currentAccessRole === 'viewer';
+    const inBranchMode = !!activeBranchId;
     const canShare = !!token && currentFileId !== null && currentAccessRole === 'owner';
 
     const commands: CommandPaletteItem[] = [
@@ -2789,7 +2996,7 @@ const App: React.FC = () => {
         group: 'File',
         label: 'Save',
         shortcut: 'Ctrl+S',
-        disabled: isReadOnly,
+        disabled: isReadOnly || inBranchMode,
         run: handleSaveFile,
         keywords: 'write store',
       },
@@ -2834,6 +3041,13 @@ const App: React.FC = () => {
         keywords: 'find replace',
       },
       {
+        id: 'view:branches',
+        group: 'View',
+        label: 'Branches',
+        run: () => setBranchesOpen(true),
+        keywords: 'draft merge branch',
+      },
+      {
         id: 'view:autosave',
         group: 'View',
         label: autoSaveEnabled ? 'Disable Auto Save' : 'Enable Auto Save',
@@ -2868,6 +3082,7 @@ const App: React.FC = () => {
 
     return [...commands, ...fileCommands];
   }, [
+    activeBranchId,
     autoSaveEnabled,
     currentAccessRole,
     currentFileId,
@@ -2887,6 +3102,7 @@ const App: React.FC = () => {
         fileName={fileName}
 	        currentFileId={currentFileId}
 	        currentAccessRole={currentAccessRole}
+	        activeBranchName={activeBranch?.name ?? null}
 	        user={user}
 	        files={files}
 	        onFileNameChange={setFileName}
@@ -2932,6 +3148,19 @@ const App: React.FC = () => {
 	        }}
 	      />
 
+	      <BranchManagerModal
+	        isOpen={branchesOpen}
+	        branches={branches}
+	        activeBranchId={activeBranchId}
+	        onClose={() => setBranchesOpen(false)}
+	        onCreateBranch={handleCreateBranch}
+	        onCheckoutBranch={handleCheckoutBranch}
+	        onCheckoutMain={handleCheckoutMain}
+	        onDeleteBranch={handleDeleteBranch}
+	        onPrepareMerge={handlePrepareBranchMerge}
+	        onApplyMerge={handleApplyBranchMerge}
+	      />
+
 	      {token && currentFileId !== null && (
 	        <ShareModal
 	          isOpen={shareOpen}
@@ -2965,6 +3194,8 @@ const App: React.FC = () => {
 	              setFindMode('find');
 	              setFindOpen(true);
 	            }}
+	            onOpenBranches={() => setBranchesOpen(true)}
+	            branchActive={!!activeBranchId}
 	            onOpenVersionHistory={() => setVersionHistoryOpen(true)}
 	            onUndo={undo}
 	            onRedo={redo}

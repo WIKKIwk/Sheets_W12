@@ -3,7 +3,7 @@ import {
   Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight,
   Type, PaintBucket, Sparkles, Search, X, Undo2, Redo2, Eraser,
   AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd,
-  TextWrap, Printer, Paintbrush, Merge, Square, Plus, Minus, Save, ChevronDown, MoreHorizontal, History
+  TextWrap, Printer, Paintbrush, Merge, Square, Plus, Minus, Save, ChevronDown, MoreHorizontal, GitBranch, History
 } from 'lucide-react';
 import { CellStyle } from '../types';
 import { usePresence } from '../utils/usePresence';
@@ -28,6 +28,8 @@ interface ToolbarProps {
   isMerged?: boolean;
   autoSaveEnabled?: boolean;
   onToggleAutoSave?: () => void;
+  onOpenBranches?: () => void;
+  branchActive?: boolean;
   onOpenVersionHistory?: () => void;
   density?: 'comfortable' | 'compact';
 }
@@ -50,6 +52,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
   isMerged,
   autoSaveEnabled,
   onToggleAutoSave,
+  onOpenBranches,
+  branchActive,
   onOpenVersionHistory,
   density
 }) => {
@@ -572,6 +576,20 @@ const Toolbar: React.FC<ToolbarProps> = ({
       </div>
 
       <div className="flex-1"></div>
+
+      {onOpenBranches && (
+        <Tooltip label="Branches">
+          <button
+            type="button"
+            onClick={onOpenBranches}
+            className={iconBtnClass(!!branchActive)}
+            style={iconBtnStyle}
+            aria-label="Branches"
+          >
+            <GitBranch size={16} />
+          </button>
+        </Tooltip>
+      )}
 
       {onOpenVersionHistory && (
         <Tooltip label="Version history">
