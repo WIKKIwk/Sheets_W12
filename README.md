@@ -117,6 +117,12 @@ REAL-TIME COLLABORATION
 ├── Conflict resolution ...... Automatic merge via CRDT algorithm
 ├── Change broadcasting ...... WebSocket push notifications
 └── User permissions ......... Owner, editor, viewer roles
+
+VERSIONING & REVIEW (MVP - local)
+├── Version history ........... Snapshots + diff + restore (browser storage)
+├── Branch mode (draft) ....... Create local branches without touching server
+├── Merge to main ............. 3-way merge + conflict resolver (main/branch pick)
+└── Safety .................... Branch mode disables realtime + server save
 ```
 
 ### AI ASSISTANT (GEMINI 2.5 FLASH)
@@ -268,6 +274,12 @@ docker compose ps
 # API: http://localhost:8080/health
 # WebSocket: ws://localhost:4000/socket
 ```
+
+### IN-APP VERSIONING (MVP)
+
+- Version History: toolbar `History` icon → snapshot yaratish, diff ko‘rish, restore qilish
+- Branches: toolbar `GitBranch` icon → draft branch, checkout, merge preview (conflict bo‘lsa `Main/Branch` tanlash)
+- Eslatma: hozircha snapshots/branches browser storage’da (local) saqlanadi, kollaboratsiya bilan sync qilinmaydi
 
 **DOCKER COMPOSE SERVICES:**
 
@@ -1151,12 +1163,15 @@ NETWORK OPTIMIZATION
 ## ROADMAP & ENHANCEMENTS
 
 ```
+Recently Added (MVP):
+├── Version History ............. Snapshots + diff + restore (local)
+└── Branches & Merge ............ Draft branches + merge preview (local)
+
 Planned Features:
 ├── Advanced Formulas ........... Array formulas, lambda functions
 ├── Pivot Tables ................ Drag-and-drop pivot table builder
 ├── Macros & Scripts ............ Custom automation (JavaScript)
 ├── Import/Export ............... Excel, CSV, Google Sheets
-├── Version History ............. Time-travel to previous versions
 ├── Comments & Annotations ...... Cell-level comments
 ├── Data Validation Rules ....... Advanced validation (regex, custom)
 ├── Conditional Formatting ...... Visual rule builder
