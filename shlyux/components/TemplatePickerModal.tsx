@@ -141,7 +141,7 @@ const TemplatePickerModal: React.FC<TemplatePickerModalProps> = ({ isOpen, hasEx
                 <button
                   type="button"
                   className="px-4 py-2 rounded text-sm text-white"
-                  style={{ background: 'var(--primary)' }}
+                  style={{ background: 'var(--brand)' }}
                   onClick={() => {
                     onApply(pending.rows, pending.fileName);
                     setPending(null);

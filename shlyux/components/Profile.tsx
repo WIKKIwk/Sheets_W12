@@ -279,20 +279,20 @@ const Profile: React.FC<ProfileProps> = ({ isOpen, onClose, onSaved }) => {
                         width: 0;
                         height: 0;
                         border-radius: 50%;
-                        background: radial-gradient(circle, rgba(102, 126, 234, 0.3), transparent);
+                        background: radial-gradient(circle, rgba(10, 132, 255, 0.25), transparent);
                         transform: translate(-50%, -50%);
                         transition: width 0.6s, height 0.6s;
                     }
 
                     .theme-option:hover {
-                        border-color: var(--primary, #667eea);
+                        border-color: var(--brand, #0a84ff);
                         transform: perspective(500px) translateY(-4px) rotateX(2deg);
-                        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.2);
+                        box-shadow: 0 8px 20px rgba(10, 132, 255, 0.18);
                     }
 
                     .theme-option.active {
-                        border-color: var(--primary, #667eea);
-                        background: rgba(102, 126, 234, 0.08);
+                        border-color: var(--brand, #0a84ff);
+                        background: rgba(10, 132, 255, 0.10);
                         border-width: 3px;
                         animation: glowPulse 2s ease-in-out infinite;
                     }
@@ -388,8 +388,8 @@ const Profile: React.FC<ProfileProps> = ({ isOpen, onClose, onSaved }) => {
 
                     .font-select:focus {
                         outline: none;
-                        border-color: var(--primary, #667eea);
-                        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+                        border-color: var(--brand, #0a84ff);
+                        box-shadow: 0 0 0 3px var(--focus-ring);
                     }
 
                     .font-preview {
@@ -458,9 +458,9 @@ const Profile: React.FC<ProfileProps> = ({ isOpen, onClose, onSaved }) => {
                     }
 
                     .profile-btn.save {
-                        background: linear-gradient(135deg, var(--primary, #667eea) 0%, #764ba2 100%);
+                        background: linear-gradient(135deg, var(--brand, #0a84ff) 0%, #0070e0 100%);
                         color: white;
-                        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+                        box-shadow: 0 4px 15px rgba(10, 132, 255, 0.25);
                         background-size: 200% 200%;
                         background-position: left center;
                         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -468,13 +468,13 @@ const Profile: React.FC<ProfileProps> = ({ isOpen, onClose, onSaved }) => {
 
                     .profile-btn.save:hover {
                         background-position: right center;
-                        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+                        box-shadow: 0 6px 20px rgba(10, 132, 255, 0.35);
                         transform: perspective(500px) translateY(-3px) rotateX(2deg);
                     }
 
                     .profile-btn.save:active {
                         animation: bouncePress 0.3s ease-out;
-                        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+                        box-shadow: 0 2px 8px rgba(10, 132, 255, 0.28);
                     }
                 `}</style>
             </div>

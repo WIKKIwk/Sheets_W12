@@ -197,7 +197,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, fileId, fileName, token
                 onClick={handleAdd}
                 disabled={!canSubmit}
                 className="px-4 py-2 rounded-md text-sm font-medium text-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed btn-lift"
-                style={{ background: 'var(--primary)' }}
+                style={{ background: 'var(--brand)' }}
               >
                 {adding ? 'Qo‘shilmoqda…' : 'Qo‘shish'}
               </button>

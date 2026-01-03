@@ -54,7 +54,13 @@ const FormulaBar: React.FC<FormulaBarProps> = ({ activeCellLabel, value, onChang
   return (
     <div
       className="flex items-center px-2 space-x-2 z-10"
-      style={{ height: barHeight, borderBottom: '1px solid var(--border-color)', background: 'var(--card-bg)' }}
+      style={{
+        height: barHeight,
+        borderBottom: '1px solid var(--chrome-border)',
+        background: 'var(--chrome-bg)',
+        backdropFilter: 'blur(18px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(18px) saturate(180%)',
+      }}
     >
       <input
         id={NAME_BOX_ID}
@@ -63,8 +69,9 @@ const FormulaBar: React.FC<FormulaBarProps> = ({ activeCellLabel, value, onChang
         style={{
           height: nameBoxHeight,
           lineHeight: `${nameBoxHeight}px`,
-          background: 'var(--card-bg)',
-          border: '1px solid var(--border-color)',
+          background: 'var(--chrome-control-bg)',
+          border: '1px solid var(--chrome-border)',
+          borderRadius: 'var(--radius-sm)',
           color: 'var(--text-primary)',
         }}
         value={nameBoxValue}
@@ -96,8 +103,9 @@ const FormulaBar: React.FC<FormulaBarProps> = ({ activeCellLabel, value, onChang
           onKeyDown={handleKeyDown}
           className="w-full h-full rounded px-2 text-sm focus:outline-none"
           style={{
-            border: '1px solid var(--border-color)',
-            background: 'var(--card-bg)',
+            border: '1px solid var(--chrome-border)',
+            background: 'var(--chrome-control-bg)',
+            borderRadius: 'var(--radius-sm)',
             color: 'var(--text-primary)'
           }}
           placeholder="Enter value or formula (e.g., =SUM(A1:B5))"

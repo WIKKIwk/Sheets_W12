@@ -85,8 +85,10 @@ const StatusBar: React.FC<StatusBarProps> = ({
       className="flex items-center justify-between px-3 text-xs"
       style={{
         height,
-        background: 'var(--card-bg)',
-        borderTop: '1px solid var(--border-color)',
+        background: 'var(--chrome-bg)',
+        borderTop: '1px solid var(--chrome-border)',
+        backdropFilter: 'blur(18px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(18px) saturate(180%)',
         gap: 12,
       }}
     >
@@ -121,4 +123,3 @@ const StatusBar: React.FC<StatusBarProps> = ({
 };
 
 export default StatusBar;
-

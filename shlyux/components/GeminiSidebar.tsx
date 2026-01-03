@@ -1412,7 +1412,7 @@ const GeminiSidebar: React.FC<GeminiSidebarProps> = ({ isOpen, onClose, sheetSta
                   onClick={handleActivateApiKey}
                   disabled={apiKeyValidating || !apiKey.trim()}
                   className="w-full py-2 px-4 rounded font-medium text-white flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50 transition-opacity"
-                  style={{ background: 'var(--primary)' }}
+                  style={{ background: 'var(--brand)' }}
                 >
                   {apiKeyValidating ? (
                     <>
@@ -1805,15 +1805,15 @@ const GeminiSidebar: React.FC<GeminiSidebarProps> = ({ isOpen, onClose, sheetSta
                       <Square size={16} fill="currentColor" />
                     </button>
                   ) : (
-                    <button
-                      onClick={handleSend}
-                      disabled={serverKeyLoading || (!input.trim() && !attachedContent)}
-                      className="p-1.5 text-white rounded hover:opacity-80 disabled:opacity-50 transition-opacity"
-                      style={{ background: 'var(--primary)' }}
-                      title="Yuborish"
-                    >
-                      <Send size={16} />
-                    </button>
+	                    <button
+	                      onClick={handleSend}
+	                      disabled={serverKeyLoading || (!input.trim() && !attachedContent)}
+	                      className="p-1.5 text-white rounded hover:opacity-80 disabled:opacity-50 transition-opacity"
+	                      style={{ background: 'var(--brand)' }}
+	                      title="Yuborish"
+	                    >
+	                      <Send size={16} />
+	                    </button>
                   )}
                 </div>
               </div>

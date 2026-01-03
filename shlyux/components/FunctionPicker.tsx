@@ -89,7 +89,7 @@ const FunctionPicker: React.FC<FunctionPickerProps> = ({ onInsert }) => {
         type="button"
         onClick={() => setOpen(prev => !prev)}
         className="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-100 transition-colors"
-        style={{ border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }}
+        style={{ border: '1px solid var(--chrome-border)', background: 'var(--chrome-control-bg)', color: 'var(--text-primary)' }}
         aria-label="Insert function"
       >
         <FunctionSquare size={18} />

@@ -132,8 +132,14 @@ const Toolbar: React.FC<ToolbarProps> = ({
 
   return (
     <div
-      className="border-b flex items-center px-4 space-x-2 shadow-sm z-20"
-      style={{ height: toolbarHeight, borderColor: 'var(--border-color)', background: 'var(--card-bg)' }}
+      className="border-b flex items-center px-4 space-x-2 z-20"
+      style={{
+        height: toolbarHeight,
+        borderColor: 'var(--chrome-border)',
+        background: 'var(--chrome-bg)',
+        backdropFilter: 'blur(18px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(18px) saturate(180%)',
+      }}
     >
       {/* Undo/Redo */}
       <div className="flex items-center space-x-1 border-r pr-2" style={{ borderColor: 'var(--border-color)' }}>
@@ -202,7 +208,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
             className="h-8 px-3 pr-8 text-sm border rounded flex items-center justify-between hover:bg-gray-50 transition-colors relative min-w-[140px]"
             style={{
               borderColor: 'var(--border-color)',
-              background: 'var(--card-bg)',
+              background: 'var(--chrome-control-bg)',
               color: 'var(--text-primary)',
               fontFamily: currentFont
             }}
@@ -379,7 +385,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
             type="button"
             onClick={() => setMoreOpen((v) => !v)}
             className="flex items-center justify-center w-9 h-9 rounded border hover:bg-gray-100 shadow-sm"
-            style={{ borderColor: 'var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }}
+            style={{ borderColor: 'var(--chrome-border)', background: 'var(--chrome-control-bg)', color: 'var(--text-primary)' }}
             aria-label="More"
           >
             <MoreHorizontal size={16} />
@@ -559,10 +565,10 @@ const Toolbar: React.FC<ToolbarProps> = ({
         <button
           onClick={onToggleAutoSave}
           className={`flex items-center gap-1.5 px-3 h-9 rounded border shadow-sm transition-all ${autoSaveEnabled ? 'border-green-400' : ''}`}
-          style={{ borderColor: autoSaveEnabled ? '#4ade80' : 'var(--border-color)', background: autoSaveEnabled ? '#f0fdf4' : 'var(--card-bg)' }}
+          style={{ borderColor: autoSaveEnabled ? '#4ade80' : 'var(--chrome-border)', background: autoSaveEnabled ? '#f0fdf4' : 'var(--chrome-control-bg)' }}
           title={autoSaveEnabled ? "Auto Save yoqilgan" : "Auto Save o'chirilgan"}
           onMouseEnter={(e) => !autoSaveEnabled && (e.currentTarget.style.background = 'var(--bg-light)')}
-          onMouseLeave={(e) => !autoSaveEnabled && (e.currentTarget.style.background = 'var(--card-bg)')}
+          onMouseLeave={(e) => !autoSaveEnabled && (e.currentTarget.style.background = 'var(--chrome-control-bg)')}
         >
           <Save size={14} className={autoSaveEnabled ? 'text-green-600' : 'text-gray-600'} />
           <span className={`text-xs font-medium ${autoSaveEnabled ? 'text-green-700' : 'text-gray-700'}`}>
@@ -576,7 +582,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
           <button
             onClick={onOpenFindReplace}
             className="flex items-center justify-center w-9 h-9 rounded border hover:bg-gray-100 shadow-sm"
-            style={{ borderColor: 'var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }}
+            style={{ borderColor: 'var(--chrome-border)', background: 'var(--chrome-control-bg)', color: 'var(--text-primary)' }}
             aria-label="Qidirish"
             type="button"
           >
@@ -590,8 +596,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
           onClick={onToggleAi}
           className="flex items-center justify-center w-9 h-9 rounded border hover:bg-gray-100 shadow-sm"
           style={{
-            borderColor: isAiOpen ? 'var(--primary)' : 'var(--border-color)',
-            background: isAiOpen ? 'var(--bg-light)' : 'var(--card-bg)',
+            borderColor: isAiOpen ? 'var(--brand)' : 'var(--chrome-border)',
+            background: isAiOpen ? 'var(--bg-light)' : 'var(--chrome-control-bg)',
             color: 'var(--text-primary)'
           }}
           aria-label="AI"

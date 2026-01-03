@@ -260,16 +260,16 @@ const FindReplaceModal: React.FC<FindReplaceModalProps> = ({
                 <Replace size={16} />
                 Almashtirish
               </button>
-              <button
-                type="button"
-                onClick={onReplaceAll}
-                disabled={query.trim().length === 0}
-                className="px-3 py-2 rounded text-sm text-white disabled:opacity-50"
-                style={{ background: 'var(--primary)' }}
-                title="Hammasini almashtirish"
-              >
-                Hammasi
-              </button>
+                <button
+                  type="button"
+                  onClick={onReplaceAll}
+                  disabled={query.trim().length === 0}
+                  className="px-3 py-2 rounded text-sm text-white disabled:opacity-50"
+                  style={{ background: 'var(--brand)' }}
+                  title="Hammasini almashtirish"
+                >
+                  Hammasi
+                </button>
             </div>
           ) : (
             <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>

@@ -277,7 +277,7 @@ export default function ColorPicker({
                     onClick={applyHex}
                     disabled={!normalizeHex(hexInput)}
                     className="px-3 py-2 rounded text-sm text-white disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity btn-lift"
-                    style={{ background: 'var(--primary)' }}
+                    style={{ background: 'var(--brand)' }}
                     title="Qo‘llash"
                   >
                     <Check size={16} />
@@ -294,4 +294,3 @@ export default function ColorPicker({
     </div>
   );
 }
-
