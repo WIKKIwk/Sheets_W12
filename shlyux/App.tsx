@@ -17,6 +17,7 @@ import StatusBar from './components/StatusBar';
 import CommandPalette, { CommandPaletteItem } from './components/CommandPalette';
 import { API_BASE, AuthUser, fetchMe, getFile, getFileRealtimeToken, listFiles, login, register, saveFile, deleteFile, SheetFileMeta, convertExcel } from './utils/api';
 import { SheetSnapshot, addSnapshot, deleteSnapshot, readSnapshots, safeCloneSheetState } from './utils/snapshots';
+import { SheetBranch, readActiveBranchId, readBranches, updateBranchState, writeActiveBranchId, writeMainShadow } from './utils/branches';
 import { SheetState, ClipboardData, ContextMenuState, GridData, CellStyle, CellData } from './types';
 import { getCellId, getColumnLabel, recomputeSheet, NUM_COLS, NUM_ROWS, cellLabelToCoords } from './utils/spreadsheetUtils';
 import { RealtimeClient } from './utils/realtime';
@@ -187,6 +188,8 @@ const App: React.FC = () => {
 	  const [showProfile, setShowProfile] = useState(false);
 	  const [versionHistoryOpen, setVersionHistoryOpen] = useState(false);
 	  const [snapshots, setSnapshots] = useState<SheetSnapshot[]>([]);
+	  const [branches, setBranches] = useState<SheetBranch[]>(() => readBranches(null));
+	  const [activeBranchId, setActiveBranchId] = useState<string | null>(() => readActiveBranchId(null));
 	  const [shareOpen, setShareOpen] = useState(false);
 	  const [uiDensity, setUiDensity] = useState<'comfortable' | 'compact'>(() => {
 	    if (typeof window === 'undefined') return 'comfortable';
@@ -226,6 +229,11 @@ const App: React.FC = () => {
 	    setSnapshots(readSnapshots(currentFileId));
 	  }, [currentFileId]);
 
+	  useEffect(() => {
+	    setBranches(readBranches(currentFileId));
+	    setActiveBranchId(readActiveBranchId(currentFileId));
+	  }, [currentFileId]);
+
   // Auto save state
   const [autoSaveEnabled, setAutoSaveEnabled] = useState<boolean>(() => {
     const saved = localStorage.getItem('sheetmaster-autosave');
@@ -242,6 +250,10 @@ const App: React.FC = () => {
   const activeSaveRequests = useRef<Set<Promise<any>>>(new Set());
 
   const scheduleAutoSave = useCallback((nextSheet: SheetState) => {
+    if (activeBranchId) {
+      console.log('Auto save skipped (branch mode)');
+      return;
+    }
     if (!token || !fileName || !autoSaveEnabled || currentAccessRole === 'viewer') {
       console.log('Auto save skipped:', { hasToken: !!token, hasFileName: !!fileName, autoSaveEnabled });
       return;
@@ -293,7 +305,7 @@ const App: React.FC = () => {
         }
       }
     })();
-  }, [token, fileName, currentFileId, autoSaveEnabled, currentAccessRole, notify]);
+  }, [activeBranchId, token, fileName, currentFileId, autoSaveEnabled, currentAccessRole, notify]);
 
   // Periodic auto save every 1 minute - use ref to get latest sheet
   const latestSheetRef = useRef(sheet);
@@ -442,8 +454,13 @@ const App: React.FC = () => {
   }, [findMatchCase, findWholeCell]);
 
   useEffect(() => {
-    if (!autoSaveEnabled || !token || !fileName || currentAccessRole === 'viewer') {
-      console.log('Periodic auto save disabled:', { autoSaveEnabled, hasToken: !!token, hasFileName: !!fileName });
+    if (activeBranchId || !autoSaveEnabled || !token || !fileName || currentAccessRole === 'viewer') {
+      console.log('Periodic auto save disabled:', {
+        branchMode: !!activeBranchId,
+        autoSaveEnabled,
+        hasToken: !!token,
+        hasFileName: !!fileName
+      });
       return;
     }
 
@@ -469,7 +486,7 @@ const App: React.FC = () => {
       console.log('Periodic auto save interval cleared');
       clearInterval(interval);
     };
-  }, [autoSaveEnabled, token, fileName, currentFileId, currentAccessRole, notify]);
+  }, [activeBranchId, autoSaveEnabled, token, fileName, currentFileId, currentAccessRole, notify]);
 
   const flushRemoteEdits = useCallback(() => {
     const pending = remoteQueue.current;
@@ -532,15 +549,44 @@ const App: React.FC = () => {
     setHistoryIndex(0);
   }, []);
 
+  const activeBranchAppliedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!activeBranchId) {
+      activeBranchAppliedRef.current = null;
+      return;
+    }
+    const key = `${currentFileId ?? 'local'}:${activeBranchId}`;
+    if (activeBranchAppliedRef.current === key) return;
+
+    const branch = branches.find((b) => b.id === activeBranchId);
+    if (!branch) return;
+    activeBranchAppliedRef.current = key;
+
+    const state = branch.state as SheetState;
+    const highestRow = getHighestRowIndex(state.data || {});
+    const rowCount = ensureRowCountForIndex(state.rowCount ?? NUM_ROWS, highestRow);
+    const nextSheet = { ...state, rowCount, data: recomputeSheet(state.data || {}) };
+    setEditingCell(null);
+    setSheet(nextSheet);
+    resetHistory(nextSheet);
+    setSaveStatus('idle');
+    setLastSavedAt(null);
+  }, [activeBranchId, branches, currentFileId, resetHistory]);
+
   // Auto-save to localStorage
   useEffect(() => {
     const timer = setTimeout(() => {
       localStorage.setItem('sheetmaster-data', JSON.stringify(sheet));
       localStorage.setItem('sheetmaster-current-sheet', JSON.stringify(sheet));
+      if (activeBranchId) {
+        setBranches(updateBranchState(currentFileId, activeBranchId, sheet));
+      } else {
+        writeMainShadow(currentFileId, sheet);
+      }
     }, 1000); // Debounce saves by 1 second
 
     return () => clearTimeout(timer);
-  }, [sheet]);
+  }, [sheet, activeBranchId, currentFileId]);
 
   // Persist auth token
   useEffect(() => {
@@ -590,7 +636,7 @@ const App: React.FC = () => {
 
   // Connect to realtime channel when a saved file is open
   useEffect(() => {
-    if (!token || !user || !currentFileId) {
+    if (activeBranchId || !token || !user || !currentFileId) {
       setRealtimeClient(prev => {
         if (prev) prev.disconnect();
         return null;
@@ -663,7 +709,7 @@ const App: React.FC = () => {
       cancelRemoteQueue();
       setRealtimeStatus('disconnected');
     };
-  }, [token, user, currentFileId, notify]);
+  }, [activeBranchId, token, user, currentFileId, notify]);
 
   // Sync formula bar with active cell
   useEffect(() => {
@@ -791,6 +837,8 @@ const App: React.FC = () => {
 	    setCurrentFileId(null);
 	    setFiles([]);
 	    setSnapshots([]);
+	    setBranches([]);
+	    setActiveBranchId(null);
 	    setCurrentAccessRole('owner');
 	    setSaveStatus('idle');
 	    setLastSavedAt(null);
@@ -804,6 +852,9 @@ const App: React.FC = () => {
 
 
   const handleNewFile = useCallback(() => {
+    writeActiveBranchId(null, null);
+    setActiveBranchId(null);
+    setBranches(readBranches(null));
     setSheet(emptySheet);
     resetHistory(emptySheet);
     setCurrentFileId(null);
@@ -815,6 +866,10 @@ const App: React.FC = () => {
 
   const handleSaveFile = useCallback(async () => {
     if (!ensureWritable('saqlash')) return;
+    if (activeBranchId) {
+      notify('warning', 'Draft/branch rejimi: serverga saqlash bloklangan. Avval merge qiling yoki main ga qayting.');
+      return;
+    }
     if (!token) {
       notify('warning', 'Token topilmadi. Avval kirish qiling.');
       return;
@@ -850,7 +905,7 @@ const App: React.FC = () => {
     } finally {
       // setSavingFile(false); // This variable is not defined in the original code, removing.
     }
-  }, [token, fileName, currentFileId, sheet, ensureWritable, notify]);
+  }, [activeBranchId, token, fileName, currentFileId, sheet, ensureWritable, notify]);
 
   const handleSelectFile = useCallback(async (id: number) => {
     if (!token) return;
