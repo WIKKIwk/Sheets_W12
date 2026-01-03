@@ -70,10 +70,42 @@ Stack Isolation:
 ├── REST API: Go 1.21 + Gin + GORM + JWT auth
 ├── Real-time: Elixir + Phoenix Channels + WebSocket
 ├── Database: PostgreSQL 15 + Redis 7
-└── AI: Google Generative AI SDK
+└── AI: Google GenAI SDK (@google/genai)
 ```
 
 ---
+
+## WHY W12C SHEETS (OVER GOOGLE SHEETS)?
+
+W12C Sheets is built for speed: you should spend time **making decisions**, not fighting spreadsheets.
+
+### FEATURE HIGHLIGHTS (MVP)
+
+- AI “operator” that executes edits (not just suggestions): fill/update cells, copy/move ranges, sort, clear ranges, delete rows/cols, delete whole category blocks (e.g. “RAM”).
+- Safety-first: AI action → auto snapshot (restore anytime) + classic undo/redo.
+- In-app versioning (local): snapshots + diff + restore (browser storage).
+- Branch mode (local): draft branches, checkout, 3-way merge, conflict picker (Main vs Branch). Branch mode disables realtime + server save.
+- Real-time collaboration: WebSocket sync + presence + roles (owner/editor/viewer).
+- File workflow: New, Templates, Open recent, Rename (owner), Share, Import (CSV + Excel via `/convert`), Export (CSV).
+- Power editing: find/replace (`Ctrl+F` / `Ctrl+H`), command palette (`Ctrl+K`), clipboard cut/copy/paste, context menu row/col ops, merge/unmerge, formatting + format painter.
+
+### POWER SHORTCUTS
+
+- `Ctrl+K` — command palette (quick actions + file switch)
+- `Ctrl+F` / `Ctrl+H` — find / replace
+- `Ctrl+S` — save (disabled in branch mode / viewer)
+- `Ctrl+Z` / `Ctrl+Y` — undo / redo
+- `Ctrl+G` — jump to cell (focus name box)
+- `Ctrl+Shift+N` — templates
+
+### AI COMMAND EXAMPLES
+
+These work best when you also select the relevant range (AI context is intentionally limited for huge sheets).
+
+- `RAM kategoriyasini to‘liq o‘chir (A ustuni bo‘yicha).`
+- `A2:C200 ni C ustun bo‘yicha sort qil.`
+- `A2:C10 ni A20 ga ko‘chir.`
+- `D2 ga A2:A200 yig‘indisini yoz (formula bilan).`
 
 ## CAPABILITY MATRIX
 
@@ -103,13 +135,13 @@ CELL OPERATIONS
 ├── Merge .................... Merge/unmerge cells
 └── Number Formats ........... Currency, percentage, date, custom
 
-DATA MANIPULATION
+DATA TOOLS (CURRENT)
 ├── Sort ..................... Ascending/descending by column
-├── Filter ................... Custom filter criteria
-├── Find & Replace ........... Text search and bulk replacement
-├── Data Validation .......... Dropdown lists, numeric ranges
-├── Conditional Formatting ... Rule-based cell styling
-└── Charts ................... Line, bar, pie, scatter visualizations
+├── Find & Replace ........... Search + bulk replace (Ctrl+F / Ctrl+H)
+├── Insert/Delete rows/cols .. Context menu + keyboard workflows
+├── Import/Export ............ CSV import/export; Excel import via /convert
+├── Templates ................ Start from presets (Ctrl+Shift+N)
+└── Command palette .......... Ctrl+K quick actions + file switch
 
 REAL-TIME COLLABORATION
 ├── Multi-user editing ....... Simultaneous cell editing (CRDT)
@@ -128,39 +160,28 @@ VERSIONING & REVIEW (MVP - local)
 ### AI ASSISTANT (GEMINI 2.5 FLASH)
 
 ```
-INTELLIGENT AUTOMATION
-├── Formula Generation ....... Natural language → Excel formula
-│   Example: "sum sales if region is North" → =SUMIF(...)
-│
-├── Data Analysis ............ Automated insights
-│   ├── Trend detection (upward/downward patterns)
-│   ├── Outlier identification (statistical anomalies)
-│   ├── Correlation analysis (relationship strength)
-│   └── Statistical summaries (mean, median, std dev)
-│
-├── Chart Recommendations .... Best visualization suggestions
-│   ├── Time series → Line chart
-│   ├── Categorical → Bar/pie chart
-│   └── Correlation → Scatter plot
-│
-├── Data Cleaning ............ Quality improvement
-│   ├── Duplicate detection & removal
-│   ├── Missing value handling
-│   ├── Format standardization
-│   └── Error correction suggestions
-│
-└── Statistical Operations ... Advanced analytics
-    ├── Descriptive statistics
-    ├── Hypothesis testing guidance
-    ├── Regression analysis setup
-    └── Distribution analysis
+AI WORKFLOWS (SHEET EDITOR + CHAT)
+├── Natural language → sheet actions (undoable)
+│   ├── Update specific cells (fill, formulas, cleanup)
+│   ├── Copy/move ranges (sparse or overwrite)
+│   ├── Sort a range
+│   ├── Clear a range
+│   ├── Delete rows/cols (with shifting)
+│   └── Delete category blocks (e.g. "RAM" header → next category header)
+├── Auto snapshot before apply (restore anytime)
+├── Context awareness (smart window)
+│   ├── Used range + header preview + active selection + explicit A1 refs
+│   └── Keyword search windows so mid-sheet blocks stay visible (e.g. "RAM")
+└── Multimodal inputs (optional)
+    ├── Attach image (Gemini can read tables/text)
+    └── Attach Excel/CSV (Excel auto-converted to CSV via /convert)
 
 AI CAPABILITIES:
 ├── Model: Google Gemini 2.5 Flash (multimodal)
-├── Context: Full spreadsheet range awareness
-├── API: REST endpoint (/api/ai/chat)
-├── Authentication: Per-user Gemini API keys
-└── Rate Limiting: Configurable per-user quotas
+├── Context: Smart window (large sheets are auto-truncated; select a range for best results)
+├── Execution: Structured JSON actions applied by the UI (no “rewrite whole sheet”)
+├── Safety: Auto-snapshot + undo/redo
+└── Keys: Per-user Gemini API keys (stored via `/api/v1/ai/gemini-key`, cached locally)
 ```
 
 ---
@@ -197,8 +218,8 @@ FRONTEND (React Application)
 ├── Build Tool: Vite 6.2.x
 ├── Styling: TailwindCSS 3.4.x
 ├── Icons: Lucide React
-├── HTTP Client: Axios
-├── AI SDK: @google/generative-ai
+├── HTTP Client: Fetch API
+├── AI SDK: @google/genai
 └── WebSocket: Native WebSocket API
 
 BACKEND (Go Microservice)
@@ -279,6 +300,7 @@ docker compose ps
 
 - Version History: toolbar `History` icon → snapshot yaratish, diff ko‘rish, restore qilish
 - Branches: toolbar `GitBranch` icon → draft branch, checkout, merge preview (conflict bo‘lsa `Main/Branch` tanlash)
+- AI Safety: AI action qo‘llashdan oldin avtomatik snapshot (xohlagan payt restore qilish mumkin)
 - Eslatma: hozircha snapshots/branches browser storage’da (local) saqlanadi, kollaboratsiya bilan sync qilinmaydi
 
 **DOCKER COMPOSE SERVICES:**
@@ -307,7 +329,7 @@ redis            6379    Redis (CRDT synchronization)
 ```bash
 # Health checks
 curl http://localhost:8080/health
-# Expected: {"status":"ok","database":"connected"}
+# Expected: {"status":"healthy"}
 
 # Database connection test
 docker exec converter_db psql -U user -d converter_db -c "SELECT 1;"
@@ -532,237 +554,74 @@ BACKUP_RETENTION_DAYS=30
 
 ## API REFERENCE
 
-### AUTHENTICATION ENDPOINTS
+Base URL: `http://localhost:8080`
+
+Notes:
+- Preferred API base path: `/api/v1`
+- Legacy compatibility path: `/api`
+- Protected endpoints require `Authorization: Bearer <jwt_token>`
+
+### AUTHENTICATION
 
 ```
-POST /register
-Description: User registration
-Payload: {
-  "email": "user@example.com",
-  "password": "SecurePassword123!",
-  "full_name": "John Doe"
-}
-Response: {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "user": {
-    "id": 1,
-    "email": "user@example.com",
-    "full_name": "John Doe",
-    "created_at": "2025-01-01T00:00:00Z"
-  }
-}
+POST /api/v1/register   (legacy: /api/register)
+Payload: { "name": "John Doe", "email": "user@example.com", "password": "SecurePassword123!" }
 
-POST /login
-Description: User authentication
-Payload: {
-  "email": "user@example.com",
-  "password": "SecurePassword123!"
-}
-Response: {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "user": {...}
-}
+POST /api/v1/login      (legacy: /api/login)
+Payload: { "email": "user@example.com", "password": "SecurePassword123!" }
 
-GET /api/me
-Headers: Authorization: Bearer <jwt_token>
-Description: Get current user profile
-Response: {
-  "id": 1,
-  "email": "user@example.com",
-  "full_name": "John Doe",
-  "gemini_api_key_set": true
-}
+GET /api/v1/me          (legacy: /api/me)
 
 POST /api/v1/api-key/generate
-Headers: Authorization: Bearer <jwt_token>
-Description: Generate API key for integrations
-Response: {
-  "api_key": "sk_live_1234567890abcdef...",
-  "created_at": "2025-01-01T00:00:00Z"
-}
 ```
 
-### FILE MANAGEMENT ENDPOINTS
+### FILES
 
 ```
-GET /api/files
-Headers: Authorization: Bearer <jwt_token>
-Description: List user's spreadsheet files
-Response: {
-  "files": [
-    {
-      "id": "uuid-here",
-      "name": "Sales Report 2024",
-      "created_at": "2025-01-01T00:00:00Z",
-      "updated_at": "2025-01-15T12:30:00Z",
-      "owner_id": 1,
-      "shared_with": []
-    }
-  ]
-}
+GET    /api/v1/files
+POST   /api/v1/files              # { id?, name, state }
+GET    /api/v1/files/:id
+DELETE /api/v1/files/:id
 
-POST /api/files
-Headers: Authorization: Bearer <jwt_token>
-Payload: {
-  "name": "New Spreadsheet",
-  "template": "blank"  // or "budget", "invoice", etc.
-}
-Response: {
-  "id": "new-uuid",
-  "name": "New Spreadsheet",
-  "created_at": "2025-01-01T00:00:00Z"
-}
+GET    /api/v1/files/:id/cells?range=A1:D20
+PATCH  /api/v1/files/:id/cells
 
-GET /api/files/:id
-Headers: Authorization: Bearer <jwt_token>
-Description: Get spreadsheet file details
-Response: {
-  "id": "uuid-here",
-  "name": "Sales Report 2024",
-  "cells": {
-    "A1": {"value": "Product", "formula": null, "format": {"bold": true}},
-    "B1": {"value": "Sales", "formula": null, "format": {"bold": true}},
-    "A2": {"value": "Widget A", "formula": null},
-    "B2": {"value": 1500, "formula": null, "format": {"numberFormat": "currency"}}
-  },
-  "metadata": {...}
-}
-
-DELETE /api/files/:id
-Headers: Authorization: Bearer <jwt_token>
-Description: Delete spreadsheet file
-Response: {"success": true}
-
-PATCH /api/v1/files/:id/cells
-Headers: Authorization: Bearer <jwt_token>
-Description: Batch update cells
-Payload: {
-  "updates": [
-    {"cell": "A1", "value": "Updated", "formula": null},
-    {"cell": "B1", "value": null, "formula": "=SUM(A2:A10)"}
-  ]
-}
-Response: {"success": true, "updated_count": 2}
-
-GET /api/v1/files/:id/cells?range=A1:D20
-Headers: Authorization: Bearer <jwt_token>
-Description: Get cells in specific range
-Response: {
-  "cells": {
-    "A1": {...},
-    "A2": {...},
-    ...
-  }
-}
-
-GET /api/v1/files/:id/schema
-Headers: Authorization: Bearer <jwt_token>
-Description: Get column headers and used range
-Response: {
-  "headers": ["Product", "Price", "Quantity", "Total"],
-  "used_range": "A1:D50",
-  "column_count": 4,
-  "row_count": 50
-}
+GET    /api/v1/files/:id/schema
+POST   /api/v1/files/:id/realtime/token
 ```
 
-### AI ASSISTANT ENDPOINTS
+### SHARING
 
 ```
-POST /api/ai/chat
-Headers: Authorization: Bearer <jwt_token>
-Description: AI assistant conversation
-Payload: {
-  "file_id": "uuid-here",
-  "message": "Create a formula to sum all sales if region is North",
-  "context": {
-    "selected_range": "A1:C100",
-    "current_cell": "D2"
-  }
-}
-Response: {
-  "response": "Use this formula: =SUMIF(B:B,\"North\",C:C)",
-  "suggested_formula": "=SUMIF(B:B,\"North\",C:C)",
-  "explanation": "This formula sums values in column C where column B equals 'North'"
-}
-
-POST /api/ai/analyze
-Headers: Authorization: Bearer <jwt_token>
-Description: Data analysis request
-Payload: {
-  "file_id": "uuid-here",
-  "range": "A1:D100",
-  "analysis_type": "trends"  // or "outliers", "correlations", "statistics"
-}
-Response: {
-  "insights": [
-    {
-      "type": "trend",
-      "description": "Sales show upward trend of 15% month-over-month",
-      "confidence": 0.89
-    },
-    {
-      "type": "outlier",
-      "description": "Row 45 contains value 3x higher than average",
-      "cell": "C45"
-    }
-  ]
-}
+GET    /api/v1/files/:id/shares
+POST   /api/v1/files/:id/shares          # { email, role: "viewer" | "editor" }
+DELETE /api/v1/files/:id/shares/:userId
 ```
 
-### SHARING & COLLABORATION
+### AI
 
 ```
-POST /api/files/:id/share
-Headers: Authorization: Bearer <jwt_token>
-Description: Share file with user
-Payload: {
-  "email": "colleague@example.com",
-  "permission": "editor"  // or "viewer"
-}
-Response: {
-  "share_id": "share-uuid",
-  "shared_with": "colleague@example.com",
-  "permission": "editor"
-}
+GET  /api/v1/ai/gemini-key
+POST /api/v1/ai/gemini-key        # { gemini_api_key: "..." }
 
-GET /api/files/:id/collaborators
-Headers: Authorization: Bearer <jwt_token>
-Description: List file collaborators
-Response: {
-  "collaborators": [
-    {
-      "user_id": 2,
-      "email": "colleague@example.com",
-      "permission": "editor",
-      "online": true,
-      "cursor_position": "B5"
-    }
-  ]
-}
+POST /api/v1/ai/generate
+POST /api/v1/ai/stream            # streamed response (SSE)
 ```
 
-### HEALTH & MONITORING
+Notes:
+- Frontend can also call Gemini directly in the browser via `@google/genai` (key is stored via endpoints above).
+- For best AI results on huge sheets, select a smaller range to avoid context truncation.
+
+### CONVERTER (EXCEL → CSV)
 
 ```
-GET /health
-Description: Service health check
-Response: {
-  "status": "ok",
-  "database": "connected",
-  "redis": "connected",
-  "version": "1.0.0"
-}
+POST /convert  (multipart/form-data: file=@sheet.xlsx)
+```
 
-GET /api/stats
-Headers: Authorization: Bearer <jwt_token>
-Description: Usage statistics
-Response: {
-  "total_files": 15,
-  "total_cells": 4567,
-  "storage_used_mb": 2.3,
-  "ai_requests_today": 42
-}
+### HEALTH
+
+```
+GET /health  -> {"status":"healthy"}
 ```
 
 ---
@@ -770,7 +629,7 @@ Response: {
 ## PROJECT STRUCTURE
 
 ```
-w12c/
+Sheets_W12/
 ├── backend-go/                 # Go REST API microservice
 │   ├── cmd/server/            # Application entry point
 │   │   └── main.go            # Server initialization
@@ -815,24 +674,13 @@ w12c/
 │   └── mix.exs               # Elixir project config
 │
 ├── shlyux/                    # React frontend (Turkish: "shlyuz" = gateway)
-│   ├── src/
-│   │   ├── components/        # React components
-│   │   │   ├── Grid.tsx      # Main spreadsheet grid
-│   │   │   ├── FormulaBar.tsx
-│   │   │   ├── Toolbar.tsx
-│   │   │   ├── Header.tsx
-│   │   │   ├── GeminiSidebar.tsx
-│   │   │   ├── FileManager.tsx
-│   │   │   ├── AuthWall.tsx
-│   │   │   └── ShareModal.tsx
-│   │   ├── utils/            # Utility functions
-│   │   │   ├── api.ts        # API client
-│   │   │   ├── spreadsheetUtils.ts
-│   │   │   ├── realtime.ts   # WebSocket client
-│   │   │   └── usePresence.ts
-│   │   ├── types.ts          # TypeScript definitions
-│   │   ├── App.tsx           # Root component
-│   │   └── index.tsx         # Entry point
+│   ├── components/            # React components (Grid, Toolbar, AI, modals)
+│   ├── utils/                 # API client, formulas engine, realtime client, etc.
+│   ├── App.tsx                # Root component
+│   ├── index.tsx              # Entry point
+│   ├── types.ts               # TypeScript types
+│   ├── index.css              # Theme + UI styles
+│   ├── animations.css         # UI animations
 │   ├── Dockerfile
 │   ├── Dockerfile.prod
 │   ├── package.json          # Dependencies
@@ -1165,13 +1013,15 @@ NETWORK OPTIMIZATION
 ```
 Recently Added (MVP):
 ├── Version History ............. Snapshots + diff + restore (local)
-└── Branches & Merge ............ Draft branches + merge preview (local)
+├── Branches & Merge ............ Draft branches + merge preview (local)
+├── AI Sheet Operator ........... Update/copy/move/sort/clear/delete + auto-snapshot
+└── AI Context Retrieval ........ Keyword search windows for mid-sheet accuracy
 
 Planned Features:
 ├── Advanced Formulas ........... Array formulas, lambda functions
 ├── Pivot Tables ................ Drag-and-drop pivot table builder
 ├── Macros & Scripts ............ Custom automation (JavaScript)
-├── Import/Export ............... Excel, CSV, Google Sheets
+├── Import/Export ............... XLSX export, Google Sheets sync, PDF export
 ├── Comments & Annotations ...... Cell-level comments
 ├── Data Validation Rules ....... Advanced validation (regex, custom)
 ├── Conditional Formatting ...... Visual rule builder
