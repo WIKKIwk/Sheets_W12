@@ -96,13 +96,13 @@ const FunctionPicker: React.FC<FunctionPickerProps> = ({ onInsert }) => {
       </button>
       {popoverPresence.isMounted && (
         <div
-          className="absolute left-0 mt-2 w-72 rounded shadow-xl z-30 ui-popover"
+          className="absolute left-0 mt-2 function-picker-popover ui-popover"
           data-state={popoverPresence.state}
-          style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', transformOrigin: 'top left' }}
+          style={{ transformOrigin: 'top left' }}
         >
-          <div className="p-2 border-b" style={{ borderColor: 'var(--border-color)' }}>
-            <div className="flex items-center px-2 py-1 rounded" style={{ background: 'var(--bg-light)' }}>
-              <Search size={14} className="mr-1" style={{ color: 'var(--text-secondary)' }} />
+          <div className="p-2 function-picker-search">
+            <div className="function-picker-search-inner">
+              <Search size={14} style={{ color: 'var(--text-secondary)' }} />
               <input
                 type="text"
                 value={query}
@@ -113,7 +113,7 @@ const FunctionPicker: React.FC<FunctionPickerProps> = ({ onInsert }) => {
               />
             </div>
           </div>
-          <div className="max-h-64 overflow-y-auto">
+          <div className="function-picker-list">
             {filtered.length === 0 && (
               <div className="px-3 py-4 text-sm" style={{ color: 'var(--text-secondary)' }}>
                 Mos funksiya topilmadi
@@ -122,7 +122,8 @@ const FunctionPicker: React.FC<FunctionPickerProps> = ({ onInsert }) => {
             {filtered.map((fn) => (
               <button
                 key={fn.name}
-                className="w-full text-left px-3 py-2 hover:bg-gray-100 transition-colors"
+                type="button"
+                className="function-picker-item"
                 onClick={() => handleSelect(fn.snippet)}
               >
                 <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>

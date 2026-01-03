@@ -375,13 +375,68 @@ textarea,
 
 .ui-popover[data-state="open"] {
   opacity: 1;
-  transform: translateY(0) scale(1);
+  transform: none;
 }
 
 .ui-popover[data-state="closed"] {
   opacity: 0;
   transform: translateY(6px) scale(0.98);
   pointer-events: none;
+}
+
+/* ============================================
+   FUNCTION PICKER POPOVER
+   ============================================ */
+
+.function-picker-popover {
+  width: 18rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  z-index: 60;
+}
+
+.function-picker-search {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.function-picker-search-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-light);
+  border: 1px solid var(--border-color);
+}
+
+.function-picker-list {
+  max-height: 16rem;
+  overflow-y: auto;
+}
+
+.function-picker-item {
+  width: 100%;
+  text-align: left;
+  padding: 0.625rem 0.875rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background-color var(--ui-motion-fast) var(--ui-motion-ease);
+}
+
+.function-picker-item:hover {
+  background: var(--sheet-selection-fill-weak);
+}
+
+.function-picker-item + .function-picker-item {
+  border-top: 1px solid var(--border-color);
 }
 
 .ui-toast {
