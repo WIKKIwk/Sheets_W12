@@ -2817,6 +2817,10 @@ const App: React.FC = () => {
         isOpen={showProfile}
         onClose={() => setShowProfile(false)}
         onSaved={(prefs) => setUiDensity(prefs.density)}
+        apiBase={API_BASE}
+        authToken={token}
+        currentFileId={currentFileId}
+        currentAccessRole={currentAccessRole}
       />
 
       {token && currentFileId !== null && (
