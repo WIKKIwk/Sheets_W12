@@ -1,90 +1,54 @@
 namespace W12CSheets.Client.Helpers;
 
 /// <summary>
-/// Timer and stopwatch helper utilities
+/// Timer helper for scheduling tasks
 /// </summary>
-public static class TimerHelper
+public class TimerHelper
 {
-    /// <summary>
-    /// Measure execution time of action
-    /// </summary>
-    public static TimeSpan Measure(Action action)
-    {
-        var sw = System.Diagnostics.Stopwatch.StartNew();
-        action();
-        sw.Stop();
-        return sw.Elapsed;
-    }
+    private System.Threading.Timer? _timer;
+    private readonly object _lock = new();
 
     /// <summary>
-    /// Measure execution time of async task
+    /// Schedule action to run after delay
     /// </summary>
-    public static async Task<TimeSpan> MeasureAsync(Func<Task> action)
+    public void Schedule(Action action, TimeSpan delay)
     {
-        var sw = System.Diagnostics.Stopwatch.StartNew();
-        await action();
-        sw.Stop();
-        return sw.Elapsed;
-    }
-
-    /// <summary>
-    /// Create periodic timer
-    /// </summary>
-    public static System.Threading.Timer CreateTimer(Action action, TimeSpan interval)
-    {
-        return new System.Threading.Timer(_ => action(), null, interval, interval);
-    }
-
-    /// <summary>
-    /// Delay with cancellation token
-    /// </summary>
-    public static async Task Delay(TimeSpan delay, CancellationToken cancellationToken = default)
-    {
-        await Task.Delay(delay, cancellationToken);
-    }
-
-    /// <summary>
-    /// Execute action after delay
-    /// </summary>
-    public static async Task DelayedExecute(Action action, TimeSpan delay)
-    {
-        await Task.Delay(delay);
-        action();
-    }
-
-    /// <summary>
-    /// Timeout wrapper
-    /// </summary>
-    public static async Task<T> WithTimeout<T>(Task<T> task, TimeSpan timeout)
-    {
-        var timeoutTask = Task.Delay(timeout);
-        var completedTask = await Task.WhenAny(task, timeoutTask);
-        
-        if (completedTask == timeoutTask)
+        lock (_lock)
         {
-            throw new TimeoutException($"Operation timed out after {timeout.TotalSeconds} seconds");
+            _timer?.Dispose();
+            _timer = new System.Threading.Timer(_ => action(), null, delay, Timeout.InfiniteTimeSpan);
         }
-        
-        return await task;
     }
 
     /// <summary>
-    /// Format TimeSpan to human readable string
+    /// Schedule recurring action
     /// </summary>
-    public static string FormatTimeSpan(TimeSpan timeSpan)
+    public void ScheduleRecurring(Action action, TimeSpan interval)
     {
-        if (timeSpan.TotalDays >= 1)
-            return $"{timeSpan.Days}d {timeSpan.Hours}h {timeSpan.Minutes}m";
-        
-        if (timeSpan.TotalHours >= 1)
-            return $"{timeSpan.Hours}h {timeSpan.Minutes}m {timeSpan.Seconds}s";
-        
-        if (timeSpan.TotalMinutes >= 1)
-            return $"{timeSpan.Minutes}m {timeSpan.Seconds}s";
-        
-        if (timeSpan.TotalSeconds >= 1)
-            return $"{timeSpan.TotalSeconds:F2}s";
-        
-        return $"{timeSpan.TotalMilliseconds:F0}ms";
+        lock (_lock)
+        {
+            _timer?.Dispose();
+            _timer = new System.Threading.Timer(_ => action(), null, TimeSpan.Zero, interval);
+        }
+    }
+
+    /// <summary>
+    /// Cancel scheduled action
+    /// </summary>
+    public void Cancel()
+    {
+        lock (_lock)
+        {
+            _timer?.Dispose();
+            _timer = null;
+        }
+    }
+
+    /// <summary>
+    /// Dispose timer
+    /// </summary>
+    public void Dispose()
+    {
+        Cancel();
     }
 }
