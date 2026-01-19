@@ -27,7 +27,40 @@ interface GridProps {
 }
 
 const DEFAULT_COL_WIDTH = 100;
-const OVERSCAN = 5; // Render extra rows/cols outside viewport
+const MIN_ROW_RENDER_COUNT = 50;
+const MIN_COL_RENDER_COUNT = 25;
+const ROW_OVERSCAN = 12;
+const COL_OVERSCAN = 4;
+const ROW_PREFETCH_BUFFER = 20;
+
+const findFirstOffsetGreater = (offsets: number[], target: number): number => {
+  let low = 0;
+  let high = offsets.length - 1;
+  let result = offsets.length;
+
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    if (offsets[mid] > target) {
+      result = mid;
+      high = mid - 1;
+    } else {
+      low = mid + 1;
+    }
+  }
+
+  return result;
+};
+
+const ensureMinRange = (start: number, end: number, minCount: number, maxIndex: number) => {
+  if (maxIndex < 0) return { start: 0, end: -1 };
+  if (maxIndex + 1 <= minCount) return { start: 0, end: maxIndex };
+  const count = end - start + 1;
+  if (count >= minCount) return { start, end };
+  const maxStart = maxIndex - minCount + 1;
+  const nextStart = Math.min(Math.max(0, start), maxStart);
+  const nextEnd = Math.min(maxIndex, nextStart + minCount - 1);
+  return { start: nextStart, end: nextEnd };
+};
 
 const formatDisplayValue = (value: string | number, style: CellStyle | undefined): string | number => {
   if (typeof value !== 'number' || !style) return value;
@@ -67,7 +100,9 @@ const formatDisplayValue = (value: string | number, style: CellStyle | undefined
 const Cell = memo(({
   row,
   col,
-  data,
+  cellValue,
+  cellComputed,
+  cellStyle,
   isActive,
   isEditing,
   editValue,
@@ -85,7 +120,9 @@ const Cell = memo(({
 }: {
   row: number;
   col: number;
-  data: GridData;
+  cellValue: string;
+  cellComputed?: string | number;
+  cellStyle?: CellStyle;
   isActive: boolean;
   isEditing: boolean;
   editValue: string;
@@ -101,27 +138,19 @@ const Cell = memo(({
   onEditCancel: () => void;
   onContextMenu: (row: number, col: number, e: React.MouseEvent) => void;
 }) => {
-  const cellId = getCellId(row, col);
-  const cellData = data[cellId];
-  const style = cellData?.style || {};
+  const style = cellStyle || {};
   const inputRef = useRef<HTMLInputElement>(null);
 
   let className = "relative px-1 text-sm cursor-cell select-none ";
 
   const wrapMode = style.wrapMode || 'overflow';
 
-  const inlineStyle: React.CSSProperties = {
-    fontWeight: style.bold ? 'bold' : 'normal',
-    fontStyle: style.italic ? 'italic' : 'normal',
-    textDecoration: style.underline ? 'underline' : 'none',
-    color: style.color || 'var(--text-primary)',
-    backgroundColor: style.backgroundColor || defaultBackgroundColor,
-    fontFamily: style.fontFamily || 'Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif',
-    fontSize: `${style.fontSize || 13}px`,
+  const baseStyle: React.CSSProperties = {
     width: `${width}px`,
     height: `${height}px`,
     border: '1px solid var(--sheet-grid-line)',
     boxSizing: 'border-box',
+    backgroundColor: style.backgroundColor || defaultBackgroundColor,
     overflow: wrapMode === 'clip' ? 'hidden' : 'visible'
   };
 
@@ -147,11 +176,21 @@ const Cell = memo(({
 
   if (isActive) {
     className += "z-10 ";
-    inlineStyle.outline = '2px solid var(--sheet-active-cell-outline)';
-    inlineStyle.outlineOffset = '-2px';
+    baseStyle.outline = '2px solid var(--sheet-active-cell-outline)';
+    baseStyle.outlineOffset = '-2px';
   }
 
-  const rawDisplayValue = cellData?.computed !== undefined ? cellData.computed : '';
+  const inlineStyle: React.CSSProperties = {
+    ...baseStyle,
+    fontWeight: style.bold ? 'bold' : 'normal',
+    fontStyle: style.italic ? 'italic' : 'normal',
+    textDecoration: style.underline ? 'underline' : 'none',
+    color: style.color || 'var(--text-primary)',
+    fontFamily: style.fontFamily || 'Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif',
+    fontSize: `${style.fontSize || 13}px`,
+  };
+
+  const rawDisplayValue = cellComputed !== undefined && cellComputed !== null ? cellComputed : cellValue;
   const displayValue = typeof rawDisplayValue === 'number' || typeof rawDisplayValue === 'string'
     ? formatDisplayValue(rawDisplayValue, style)
     : '';
@@ -300,6 +339,10 @@ const Grid: React.FC<GridProps> = ({
   const lastDragRef = useRef<{ row: number; col: number } | null>(null);
   const mousePosRef = useRef<{ x: number, y: number } | null>(null);
   const rafRef = useRef<number | null>(null);
+  const rowPrefetchRef = useRef(0);
+  const scrollRafRef = useRef<number | null>(null);
+  const scrollPendingRef = useRef<{ scrollTop: number; scrollLeft: number; clientHeight: number; clientWidth: number } | null>(null);
+  const lastScrollRef = useRef<{ top: number; left: number; time: number }>({ top: 0, left: 0, time: 0 });
 
   const getColWidth = useCallback((col: number) => columnWidths[col] || DEFAULT_COL_WIDTH, [columnWidths]);
   const getRowHeight = useCallback((row: number) => rowHeights[row] || defaultRowHeight, [rowHeights, defaultRowHeight]);
@@ -338,51 +381,26 @@ const Grid: React.FC<GridProps> = ({
   // Calculate visible range (only for ROWS and COLS - we render all column headers)
   const visibleRange = useMemo(() => {
     const { scrollTop, scrollLeft } = scrollState;
-    const containerWidth = containerRef.current?.clientWidth || 1200;
-    const containerHeight = containerRef.current?.clientHeight || 800;
+    const containerWidth = scrollState.clientWidth || containerRef.current?.clientWidth || 1200;
+    const containerHeight = scrollState.clientHeight || containerRef.current?.clientHeight || 800;
 
-    // Find visible row range
-    let startRow = 0;
-    let endRow = Math.min(rowCount - 1, Math.max(0, Math.floor(containerHeight / defaultRowHeight) + OVERSCAN));
+    const rowStartIndex = Math.max(0, findFirstOffsetGreater(rowOffsets, scrollTop) - 1);
+    const rowEndIndex = Math.max(
+      rowStartIndex,
+      Math.min(rowCount - 1, findFirstOffsetGreater(rowOffsets, scrollTop + containerHeight) - 1)
+    );
+    let startRow = Math.max(0, rowStartIndex - ROW_OVERSCAN);
+    let endRow = Math.min(rowCount - 1, rowEndIndex + ROW_OVERSCAN);
+    ({ start: startRow, end: endRow } = ensureMinRange(startRow, endRow, MIN_ROW_RENDER_COUNT, rowCount - 1));
 
-    for (let i = 0; i < rowCount; i++) {
-      if (rowOffsets[i + 1] > scrollTop) {
-        startRow = Math.max(0, i - OVERSCAN);
-        break;
-      }
-    }
-
-    for (let i = startRow; i < rowCount; i++) {
-      if (rowOffsets[i] > scrollTop + containerHeight) {
-        endRow = Math.min(rowCount - 1, i + OVERSCAN);
-        break;
-      }
-    }
-
-    // Find visible col range for cells
-    let startCol = 0;
-    let endCol = NUM_COLS - 1; // Default to all columns
-
-    for (let i = 0; i < NUM_COLS; i++) {
-      if (colOffsets[i + 1] > scrollLeft) {
-        startCol = Math.max(0, i - OVERSCAN);
-        break;
-      }
-    }
-
-    // Calculate endCol based on visible area
-    let foundEndCol = false;
-    for (let i = startCol; i < NUM_COLS; i++) {
-      if (colOffsets[i] > scrollLeft + containerWidth) {
-        endCol = Math.min(NUM_COLS - 1, i + OVERSCAN);
-        foundEndCol = true;
-        break;
-      }
-    }
-    // If no break occurred, all columns from startCol to end are visible
-    if (!foundEndCol) {
-      endCol = NUM_COLS - 1;
-    }
+    const colStartIndex = Math.max(0, findFirstOffsetGreater(colOffsets, scrollLeft) - 1);
+    const colEndIndex = Math.max(
+      colStartIndex,
+      Math.min(NUM_COLS - 1, findFirstOffsetGreater(colOffsets, scrollLeft + containerWidth) - 1)
+    );
+    let startCol = Math.max(0, colStartIndex - COL_OVERSCAN);
+    let endCol = Math.min(NUM_COLS - 1, colEndIndex + COL_OVERSCAN);
+    ({ start: startCol, end: endCol } = ensureMinRange(startCol, endCol, MIN_COL_RENDER_COUNT, NUM_COLS - 1));
 
     return { startRow, endRow, startCol, endCol };
   }, [scrollState, rowCount, rowOffsets, colOffsets]);
@@ -604,20 +622,52 @@ const Grid: React.FC<GridProps> = ({
 
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
-    setScrollState({
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    lastScrollRef.current = { top: target.scrollTop, left: target.scrollLeft, time: now };
+
+    const next = {
       scrollTop: target.scrollTop,
       scrollLeft: target.scrollLeft,
       clientHeight: target.clientHeight,
       clientWidth: target.clientWidth
-    });
+    };
+    scrollPendingRef.current = next;
 
-    // Trigger load more rows
-    const totalHeight = rowOffsets[rowCount] || rowCount * defaultRowHeight;
-    const distanceFromBottom = totalHeight - (target.scrollTop + target.clientHeight);
-    if (distanceFromBottom < 500) {
-      onRequestMoreRows();
-    }
-  }, [rowOffsets, rowCount, onRequestMoreRows, defaultRowHeight]);
+    if (scrollRafRef.current !== null) return;
+
+    scrollRafRef.current = requestAnimationFrame(() => {
+      scrollRafRef.current = null;
+      const pending = scrollPendingRef.current;
+      if (!pending) return;
+      scrollPendingRef.current = null;
+      setScrollState((prev) => {
+        if (
+          prev.scrollTop === pending.scrollTop &&
+          prev.scrollLeft === pending.scrollLeft &&
+          prev.clientHeight === pending.clientHeight &&
+          prev.clientWidth === pending.clientWidth
+        ) {
+          return prev;
+        }
+        return pending;
+      });
+    });
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (scrollRafRef.current !== null) {
+        cancelAnimationFrame(scrollRafRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (visibleRange.endRow < rowCount - ROW_PREFETCH_BUFFER) return;
+    if (rowPrefetchRef.current === rowCount) return;
+    rowPrefetchRef.current = rowCount;
+    onRequestMoreRows();
+  }, [visibleRange.endRow, rowCount, onRequestMoreRows]);
 
   // Selection overlay
   const renderSelectionOverlay = () => {
@@ -920,6 +970,11 @@ const Grid: React.FC<GridProps> = ({
                 const width = getColWidth(c);
                 const isEditing = editingCell?.row === r && editingCell?.col === c;
                 const isActive = activeCell?.row === r && activeCell?.col === c;
+                const cellId = getCellId(r, c);
+                const cellData = data[cellId];
+                const cellValue = cellData?.value ?? '';
+                const cellComputed = cellData?.computed;
+                const cellStyle = cellData?.style;
                 const defaultBackgroundColor = r % 2 === 0 ? 'var(--sheet-cell-bg)' : 'var(--sheet-cell-bg-alt)';
 
                 return (
@@ -935,7 +990,9 @@ const Grid: React.FC<GridProps> = ({
                     <Cell
                       row={r}
                       col={c}
-                      data={data}
+                      cellValue={cellValue}
+                      cellComputed={cellComputed}
+                      cellStyle={cellStyle}
                       isActive={isActive}
                       isEditing={isEditing}
                       editValue={isEditing ? editingValue : ''}

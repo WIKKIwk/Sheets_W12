@@ -1,8 +1,13 @@
+# W12C Sheets © 2025 W12C / Abdulfattox Qurbonov
 defmodule Converter.Application do
   use Application
+  require Logger
+
+  @branding_notice "W12C Sheets © 2025 W12C / Abdulfattox Qurbonov"
 
   @impl true
   def start(_type, _args) do
+    Logger.info(@branding_notice)
     redis_host = System.get_env("REDIS_HOST", "localhost")
     redis_port =
       System.get_env("REDIS_PORT", "6379")

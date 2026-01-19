@@ -123,6 +123,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
                             item.action!();
                             onClose();
                         }}
+                        data-sound={item.danger ? 'danger' : undefined}
                         className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors ${item.danger ? 'text-red-600 hover:bg-red-50' : ''
                             }`}
                         style={!item.danger ? {

@@ -89,6 +89,7 @@ const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
           </button>
           <button
             onClick={onConfirm}
+            data-sound="danger"
             className="px-4 py-2 text-sm font-medium text-white rounded-md hover:opacity-90 transition-opacity"
             style={{ background: '#ef4444' }}
           >

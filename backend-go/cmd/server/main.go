@@ -1,3 +1,4 @@
+// W12C Sheets © 2025 W12C / Abdulfattox Qurbonov
 package main
 
 import (
@@ -12,11 +13,15 @@ import (
 	"github.com/joho/godotenv"
 )
 
+const brandingNotice = "W12C Sheets © 2025 W12C / Abdulfattox Qurbonov"
+
 func main() {
 	// Load .env
 	if err := godotenv.Load("../../.env"); err != nil {
 		log.Println("No .env file found, using defaults")
 	}
+
+	log.Println(brandingNotice)
 
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
@@ -57,6 +62,7 @@ func main() {
 			"status":  "healthy",
 			"service": "sheetmaster-api",
 			"version": "1.0.0",
+			"brand":   brandingNotice,
 		})
 	})
 

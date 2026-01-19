@@ -87,6 +87,7 @@ const OverwriteConfirmModal: React.FC<OverwriteConfirmModalProps> = ({
           </button>
           <button
             onClick={onConfirm}
+            data-sound="primary"
             className="px-4 py-2 text-sm font-medium text-white rounded-md hover:opacity-90 transition-opacity"
             style={{ background: '#f97316' }}
           >

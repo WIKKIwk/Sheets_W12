@@ -5,7 +5,7 @@ import { generateApiKey } from '../utils/api';
 interface ProfileProps {
     isOpen: boolean;
     onClose: () => void;
-    onSaved?: (prefs: { theme: string; font: string; density: 'comfortable' | 'compact' }) => void;
+    onSaved?: (prefs: { theme: string; font: string; density: 'comfortable' | 'compact'; soundEnabled: boolean }) => void;
     apiBase: string;
     authToken: string | null;
     currentFileId: number | null;
@@ -25,6 +25,11 @@ const Profile: React.FC<ProfileProps> = ({ isOpen, onClose, onSaved, apiBase, au
     const [selectedDensity, setSelectedDensity] = useState<'comfortable' | 'compact'>(() => {
         return localStorage.getItem('app-density') === 'compact' ? 'compact' : 'comfortable';
     });
+    const [soundEnabled, setSoundEnabled] = useState(() => {
+        const stored = localStorage.getItem('app-sound-enabled');
+        if (stored === null) return true;
+        return stored === 'true';
+    });
 
     const [generatedSnippet, setGeneratedSnippet] = useState<string | null>(null);
     const [copyStatus, setCopyStatus] = useState<string | null>(null);
@@ -42,6 +47,7 @@ const Profile: React.FC<ProfileProps> = ({ isOpen, onClose, onSaved, apiBase, au
         localStorage.setItem('app-theme', selectedTheme);
         localStorage.setItem('app-font', selectedFont);
         localStorage.setItem('app-density', selectedDensity);
+        localStorage.setItem('app-sound-enabled', String(soundEnabled));
 
         // Apply theme
         document.documentElement.setAttribute('data-theme', selectedTheme);
@@ -52,7 +58,7 @@ const Profile: React.FC<ProfileProps> = ({ isOpen, onClose, onSaved, apiBase, au
         // Apply font
         document.documentElement.style.setProperty('--font-family', selectedFont);
 
-        onSaved?.({ theme: selectedTheme, font: selectedFont, density: selectedDensity });
+        onSaved?.({ theme: selectedTheme, font: selectedFont, density: selectedDensity, soundEnabled });
 
         // Close modal
         onClose();
@@ -225,6 +231,26 @@ const Profile: React.FC<ProfileProps> = ({ isOpen, onClose, onSaved, apiBase, au
                                 </select>
                                 <p className="profile-subtitle" style={{ marginTop: '0.5rem' }}>
                                     Jadval va toolbar zichligini sozlash
+                                </p>
+                            </div>
+
+                            {/* Sound Toggle */}
+                            <div className="profile-section">
+                                <label className="profile-label">Button Sounds</label>
+                                <div className="sound-toggle-row">
+                                    <button
+                                        type="button"
+                                        className={`sound-toggle ${soundEnabled ? 'on' : ''}`}
+                                        onClick={() => setSoundEnabled((prev) => !prev)}
+                                        aria-pressed={soundEnabled}
+                                        data-sound="toggle"
+                                    >
+                                        <span className="sound-toggle-thumb" />
+                                    </button>
+                                    <span className="sound-toggle-text">{soundEnabled ? 'On' : 'Off'}</span>
+                                </div>
+                                <p className="profile-subtitle" style={{ marginTop: '0.5rem' }}>
+                                    Tugma tovushlarini yoqish yoki o'chirish
                                 </p>
                             </div>
 
@@ -576,6 +602,50 @@ const Profile: React.FC<ProfileProps> = ({ isOpen, onClose, onSaved, apiBase, au
                         font-weight: 500;
                         color: var(--text-primary, #111827);
                         margin-bottom: 0.75rem;
+                    }
+
+                    .sound-toggle-row {
+                        display: flex;
+                        align-items: center;
+                        gap: 0.75rem;
+                    }
+
+                    .sound-toggle {
+                        width: 48px;
+                        height: 26px;
+                        padding: 2px;
+                        border-radius: 999px;
+                        border: 1px solid var(--border-color, #e5e7eb);
+                        background: var(--bg-light, #f3f4f6);
+                        cursor: pointer;
+                        display: inline-flex;
+                        align-items: center;
+                        transition: background 0.2s ease, border-color 0.2s ease;
+                    }
+
+                    .sound-toggle.on {
+                        background: rgba(10, 132, 255, 0.18);
+                        border-color: rgba(10, 132, 255, 0.45);
+                    }
+
+                    .sound-toggle-thumb {
+                        width: 20px;
+                        height: 20px;
+                        border-radius: 999px;
+                        background: var(--card-bg, #ffffff);
+                        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+                        transform: translateX(0);
+                        transition: transform 0.2s ease;
+                    }
+
+                    .sound-toggle.on .sound-toggle-thumb {
+                        transform: translateX(22px);
+                    }
+
+                    .sound-toggle-text {
+                        font-size: 0.875rem;
+                        font-weight: 600;
+                        color: var(--text-secondary, #6b7280);
                     }
 
                     .theme-options {

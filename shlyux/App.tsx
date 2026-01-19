@@ -1,3 +1,4 @@
+// W12C Sheets © 2025 W12C / Abdulfattox Qurbonov
 import React, { useState, useEffect, useCallback, useRef, Suspense, useMemo } from 'react';
 import Toolbar from './components/Toolbar';
 import FormulaBar, { NAME_BOX_ID } from './components/FormulaBar';
@@ -22,6 +23,8 @@ import { SheetBranch, addBranch, deleteBranch, mergeSheetsThreeWay, readActiveBr
 import { SheetState, ClipboardData, ContextMenuState, GridData, CellStyle, CellData } from './types';
 import { getCellId, getColumnLabel, recomputeSheet, NUM_COLS, NUM_ROWS, cellLabelToCoords } from './utils/spreadsheetUtils';
 import { RealtimeClient } from './utils/realtime';
+import { getButtonSoundType, playButtonSound, playUiSound } from './utils/buttonSounds';
+import { BRAND_NOTICE } from './utils/branding';
 
 const GeminiSidebar = React.lazy(() => import('./components/GeminiSidebar'));
 
@@ -197,6 +200,13 @@ const App: React.FC = () => {
 	    if (typeof window === 'undefined') return 'comfortable';
 	    return localStorage.getItem('app-density') === 'compact' ? 'compact' : 'comfortable';
 	  });
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    const stored = localStorage.getItem('app-sound-enabled');
+    if (stored === null) return true;
+    return stored === 'true';
+  });
+  const soundEnabledRef = useRef(soundEnabled);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const saveSeqRef = useRef(0);
@@ -228,13 +238,45 @@ const App: React.FC = () => {
     document.documentElement.style.setProperty('--font-family', font);
   }, []);
 
-	  useEffect(() => {
-	    document.documentElement.setAttribute('data-density', uiDensity);
-	  }, [uiDensity]);
+  useEffect(() => {
+    console.info(BRAND_NOTICE);
+  }, []);
 
-	  useEffect(() => {
-	    setSnapshots(readSnapshots(currentFileId));
-	  }, [currentFileId]);
+  useEffect(() => {
+    document.documentElement.setAttribute('data-density', uiDensity);
+  }, [uiDensity]);
+
+  useEffect(() => {
+    soundEnabledRef.current = soundEnabled;
+  }, [soundEnabled]);
+
+  useEffect(() => {
+    const handleClick = (event: MouseEvent) => {
+      if (!soundEnabledRef.current || !event.isTrusted) return;
+
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+
+      const candidate = target.closest(
+        'button, [data-sound], .action-btn, .icon-btn, .profile-btn, .dev-action-btn, .snippet-action-btn, .profile-tab, .theme-option, .user-btn, .file-delete-btn, .auth-primary-btn'
+      );
+
+      if (!candidate || !(candidate instanceof HTMLElement)) return;
+
+      if (candidate instanceof HTMLButtonElement && candidate.disabled) return;
+      if (candidate.getAttribute('aria-disabled') === 'true') return;
+      if (candidate.hasAttribute('disabled')) return;
+
+      playButtonSound(getButtonSoundType(candidate));
+    };
+
+    document.addEventListener('click', handleClick, true);
+    return () => document.removeEventListener('click', handleClick, true);
+  }, []);
+
+  useEffect(() => {
+    setSnapshots(readSnapshots(currentFileId));
+  }, [currentFileId]);
 
 	  useEffect(() => {
 	    setBranches(readBranches(currentFileId));
@@ -2468,6 +2510,7 @@ const App: React.FC = () => {
         console.log('Applying rows with name:', baseName);
 
         applyImportedRows(rows, baseName || fileName);
+        playUiSound('file-upload');
         console.log('Import completed');
       } else if (ext === 'xlsx' || ext === 'xls') {
         // Try backend for Excel files
@@ -2477,6 +2520,7 @@ const App: React.FC = () => {
           const rows = parseCsv(csvText);
           const baseName = file.name.replace(/\.(xlsx|xls)$/i, '');
           applyImportedRows(rows, baseName || fileName);
+          playUiSound('file-upload');
         } catch (backendErr) {
           console.error('Excel import error:', backendErr);
           notify('warning', 'Excel import server mavjud emas. Faqat CSV fayllarni import qilish mumkin.');
@@ -3343,7 +3387,10 @@ const App: React.FC = () => {
 	      <Profile
 	        isOpen={showProfile}
 	        onClose={() => setShowProfile(false)}
-	        onSaved={(prefs) => setUiDensity(prefs.density)}
+	        onSaved={(prefs) => {
+	          setUiDensity(prefs.density);
+	          setSoundEnabled(prefs.soundEnabled);
+	        }}
 	        apiBase={API_BASE}
 	        authToken={token}
 	        currentFileId={currentFileId}

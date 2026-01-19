@@ -4,6 +4,7 @@ import { SheetState } from '../types';
 import { cellLabelToCoords, getColumnLabel, getCellId, NUM_COLS } from '../utils/spreadsheetUtils';
 import { getGeminiApiKey, saveGeminiApiKey, convertExcel } from '../utils/api';
 import { usePresence } from '../utils/usePresence';
+import { playUiSound } from '../utils/buttonSounds';
 
 // Helper to parse "row,col" id back to indices
 const getCellIdParts = (id: string): { row: number; col: number } => {
@@ -985,6 +986,7 @@ const GeminiSidebar: React.FC<GeminiSidebarProps> = ({ isOpen, onClose, sheetSta
 
     const displayMsg = currentAttachedName ? `${userMsg || 'matn kiritilmagan'}\n[Fayl: ${currentAttachedName}]` : userMsg;
     appendUser(displayMsg);
+    playUiSound('ai-send');
     setLoading(true);
 
     const snapshotLabel = (() => {
@@ -1192,6 +1194,7 @@ const GeminiSidebar: React.FC<GeminiSidebarProps> = ({ isOpen, onClose, sheetSta
         })();
 
         if (!envelope) {
+          playUiSound('ai-receive');
           appendModel(text, { startTyping: true });
           return;
         }
@@ -1222,6 +1225,7 @@ const GeminiSidebar: React.FC<GeminiSidebarProps> = ({ isOpen, onClose, sheetSta
             });
 
             if (edits.length > MAX_AI_EDITS) {
+              playUiSound('ai-receive');
               appendModel(`Juda ko'p o'zgarish (${edits.length}). Avval range tanlang yoki "sort/delete/clear" kabi amallarni ishlating.`, { startTyping: true });
               return;
             }
@@ -1257,9 +1261,11 @@ const GeminiSidebar: React.FC<GeminiSidebarProps> = ({ isOpen, onClose, sheetSta
         const finalMessage = (envelope.message && envelope.message.trim())
           ? envelope.message.trim()
           : (actionMessages.find(Boolean) || 'Bajarildi.');
+        playUiSound('ai-receive');
         appendModel(finalMessage, { startTyping: true });
       } catch (e) {
         if (!abortControllerRef.current) return; // Don't show error if aborted
+        playUiSound('ai-receive');
         appendModel(text, { startTyping: true });
       }
 
@@ -1789,6 +1795,7 @@ const GeminiSidebar: React.FC<GeminiSidebarProps> = ({ isOpen, onClose, sheetSta
                           setAttachedPreview(null);
                           setAttachedName(file.name);
                           setFileLoading(false);
+                          playUiSound('file-upload');
                           return;
                         }
 
@@ -1803,6 +1810,7 @@ const GeminiSidebar: React.FC<GeminiSidebarProps> = ({ isOpen, onClose, sheetSta
                           }
                           setAttachedName(file.name);
                           setFileLoading(false);
+                          playUiSound('file-upload');
                         };
                         reader.onerror = () => { setFileError('Faylni o\'qishda xato'); setFileLoading(false); };
                         if (isTextFile(file)) {
